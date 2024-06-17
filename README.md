@@ -18,13 +18,13 @@ Kernel id in this case is `2c91`
 2. Launch the proxy
 
 ```shell
-python websocket.py 2c91
+python relay.py 2c91
 ```
 
 3. Open `index.html` in your browser
 
-4. Use the REPL to interact with the kernel
+4. Connect to the kernel
 
 ```shell
-python repl.py 2c91
+jupyter console --existing 2c91
 ```
