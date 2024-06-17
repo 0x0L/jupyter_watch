@@ -1,10 +1,10 @@
 import asyncio
-import websockets
 import json
 import sys
 
 import jupyter_client
 from jupyter_client.asynchronous.client import AsyncKernelClient
+import websockets
 
 CLIENTS = set()
 
@@ -16,8 +16,6 @@ KERNEL.start_channels()
 
 async def relay(queue, websocket):
     while True:
-        # Implement custom logic based on queue.qsize() and
-        # websocket.transport.get_write_buffer_size() here.
         message = await queue.get()
         await websocket.send(message)
 
@@ -41,6 +39,7 @@ def broadcast(message):
 async def broadcast_messages():
     while True:
         msg = await KERNEL.get_iopub_msg()
+        # TODO msg_type is actually in header
         msg = json.dumps({k: msg[k] for k in ("msg_type", "content")})
         broadcast(msg)
 
