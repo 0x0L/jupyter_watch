@@ -5,6 +5,13 @@
   margin: 8px;
 }
 
+.error {
+  background-color: red;
+  border-radius: 16px;
+  padding: 8px;
+  margin: 8px;
+}
+
 .execute_result {
   background-color: lightgreen;
   border-radius: 16px;
