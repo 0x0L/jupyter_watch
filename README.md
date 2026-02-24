@@ -1,6 +1,13 @@
 # jupyter-watch
 
-A web-based jupyter kernel watcher experiment.
+A web-based real-time viewer for Jupyter kernel output. Connects to a running kernel via ZeroMQ and displays executed code, results, streams, and errors in a JupyterLab-inspired interface.
+
+Features: syntax highlighting, LaTeX math rendering, dark/light theme, cell folding, auto-scroll, click-to-copy.
+
+## Prerequisites
+
+- Node.js >= 18
+- Jupyter (`pip install jupyter`)
 
 ## Setup
 
@@ -9,40 +16,52 @@ npm install
 npm run build
 ```
 
-## Demo
+## Usage
 
-1. Launch a jupyter kernel
+1. Launch a Jupyter kernel
 
 ```shell
 jupyter kernel
-[KernelApp] Starting kernel 'python3'
-[KernelApp] Connection file: /Users/xav/Library/Jupyter/runtime/kernel-2c91528a-a8f7-437a-83ba-94c0af8c5228.json
-[KernelApp] To connect a client: --existing kernel-2c91528a-a8f7-437a-83ba-94c0af8c5228.json
+# [KernelApp] Connection file: .../kernel-2c91528a-....json
 ```
 
-Kernel id in this case is `2c91`
-
-2. Launch the server
+2. Start the server (pass any unique prefix of the kernel UUID)
 
 ```shell
 node server.js 2c91
 ```
 
-3. Open `http://localhost:8765` in your browser
+3. Open http://localhost:8765
 
-4. Connect to the kernel
+4. Execute code from any Jupyter client
 
 ```shell
 jupyter console --existing 2c91
 ```
 
+The port can be configured with the `PORT` environment variable.
+
 ## Development
 
-Run the relay server and Vite dev server:
+Run the backend and Vite dev server side by side:
 
 ```shell
-node server.js <kernel-id>   # relay on :8765
+node server.js <kernel-id>   # backend on :8765
 npm run dev                   # Vite HMR on :5173
 ```
 
-Open `http://localhost:5173` during development.
+Open http://localhost:5173 during development.
+
+## Scripts
+
+| Command          | Description                         |
+| ---------------- | ----------------------------------- |
+| `npm run dev`    | Start Vite dev server with HMR      |
+| `npm run build`  | Production build to `dist/`         |
+| `npm start`      | Run the production server           |
+| `npm run lint`   | Run ESLint and Prettier checks      |
+| `npm run format` | Auto-format all files with Prettier |
+
+## License
+
+MIT

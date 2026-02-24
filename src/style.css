@@ -412,8 +412,8 @@ body {
 /* Theme FAB */
 #theme-fab {
   position: fixed;
-  bottom: 24px;
-  left: 24px;
+  bottom: 76px;
+  right: 24px;
   z-index: 100;
   width: 44px;
   height: 44px;

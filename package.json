@@ -1,6 +1,9 @@
 {
   "name": "jupyter-watch",
   "version": "0.1.0",
+  "description": "Web-based Jupyter kernel output watcher with real-time display",
+  "author": "0x0L",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "scripts": {

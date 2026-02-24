@@ -6,10 +6,10 @@ import { homedir } from "node:os";
 import { platform } from "node:process";
 
 import { Subscriber } from "zeromq";
-import { WebSocketServer } from "ws";
+import WebSocket, { WebSocketServer } from "ws";
 
 const DELIMITER = "<IDS|MSG>";
-const PORT = 8765;
+const PORT = parseInt(process.env.PORT || "8765", 10);
 const DIST = join(import.meta.dirname, "dist");
 
 const MIME_TYPES = {
@@ -85,9 +85,15 @@ function parseJupyterMessage(frames, key) {
     }
   }
 
-  const header = JSON.parse(headerBuf.toString());
-  const parentHeader = JSON.parse(parentHeaderBuf.toString());
-  const content = JSON.parse(contentBuf.toString());
+  let header, parentHeader, content;
+  try {
+    header = JSON.parse(headerBuf.toString());
+    parentHeader = JSON.parse(parentHeaderBuf.toString());
+    content = JSON.parse(contentBuf.toString());
+  } catch (err) {
+    console.error("Failed to parse Jupyter message JSON:", err.message);
+    return null;
+  }
 
   return {
     msg_type: header.msg_type,
@@ -134,6 +140,11 @@ async function main() {
   // Find and load connection file
   const connFile = findConnectionFile(kernelId);
   const connInfo = JSON.parse(readFileSync(connFile, "utf-8"));
+  for (const field of ["transport", "ip", "iopub_port"]) {
+    if (!connInfo[field]) {
+      throw new Error(`Connection file missing required field: ${field}`);
+    }
+  }
   console.log(`Loaded connection file: ${connFile}`);
 
   // Connect ZMQ subscriber to iopub
@@ -181,7 +192,7 @@ async function main() {
 
     const data = JSON.stringify(msg);
     for (const ws of clients) {
-      if (ws.readyState === 1) {
+      if (ws.readyState === WebSocket.OPEN) {
         ws.send(data);
       }
     }

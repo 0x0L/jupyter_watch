@@ -199,9 +199,9 @@ function handleMessage(msg) {
       const outputArea = cell ? getOutputArea(cell) : createStandaloneOutput();
 
       // Try to append to existing stream element of same name in this cell
-      const streamClass = `output-stream ${content.name || "stdout"}`;
+      const streamName = content.name || "stdout";
       let streamEl = outputArea.querySelector(
-        `.output-block:last-child .output-stream.${content.name || "stdout"}`,
+        `.output-block:last-child .output-stream[data-stream="${streamName}"]`,
       );
 
       if (streamEl) {
@@ -209,7 +209,8 @@ function handleMessage(msg) {
       } else {
         const block = createOutputBlock(null);
         streamEl = document.createElement("div");
-        streamEl.className = streamClass;
+        streamEl.className = `output-stream ${streamName}`;
+        streamEl.dataset.stream = streamName;
         streamEl.innerHTML = renderStream(content.text);
         block.querySelector(".content").appendChild(streamEl);
         outputArea.appendChild(block);
