@@ -1,0 +1,241 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: #f0f0f0;
+  color: #333;
+  padding-top: 48px;
+}
+
+/* Header bar */
+#header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 48px;
+  background: #1976d2;
+  color: white;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  z-index: 100;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+#header .title {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.status {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-left: 12px;
+}
+
+.status.connected {
+  background: #4caf50;
+  box-shadow: 0 0 4px #4caf50;
+}
+
+.status.disconnected {
+  background: #f44336;
+  box-shadow: 0 0 4px #f44336;
+}
+
+/* Notebook container */
+#notebook {
+  max-width: 900px;
+  margin: 16px auto;
+  padding: 0 16px;
+}
+
+/* Cell */
+.cell {
+  background: white;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  border-left: 3px solid #1976d2;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+/* Input area */
+.cell-input {
+  display: flex;
+  background: #f7f7f7;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.cell-input .gutter {
+  flex-shrink: 0;
+  width: 80px;
+  padding: 8px 4px 8px 8px;
+  text-align: right;
+  font-family: "JetBrains Mono", "Fira Code", "Menlo", "Consolas", monospace;
+  font-size: 12px;
+  color: #1976d2;
+  user-select: none;
+}
+
+.cell-input .source {
+  flex: 1;
+  overflow-x: auto;
+  padding: 8px 12px;
+}
+
+.cell-input .source pre {
+  margin: 0;
+  font-family: "JetBrains Mono", "Fira Code", "Menlo", "Consolas", monospace;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.cell-input .source code {
+  background: transparent;
+  padding: 0;
+}
+
+/* Output area */
+.cell-output {
+  padding: 0;
+}
+
+.cell-output:empty {
+  display: none;
+}
+
+/* Output block (one per output message) */
+.output-block {
+  display: flex;
+}
+
+.output-block .gutter {
+  flex-shrink: 0;
+  width: 80px;
+  padding: 8px 4px 8px 8px;
+  text-align: right;
+  font-family: "JetBrains Mono", "Fira Code", "Menlo", "Consolas", monospace;
+  font-size: 12px;
+  color: #d32f2f;
+  user-select: none;
+}
+
+.output-block .content {
+  flex: 1;
+  padding: 8px 12px;
+  overflow-x: auto;
+  min-width: 0;
+}
+
+.output-block pre {
+  margin: 0;
+  font-family: "JetBrains Mono", "Fira Code", "Menlo", "Consolas", monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* Stream output */
+.output-stream {
+  font-family: "JetBrains Mono", "Fira Code", "Menlo", "Consolas", monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.output-stream.stderr {
+  background: #fff0f0;
+  color: #c62828;
+}
+
+/* Error output */
+.output-error {
+  background: #fce4e4;
+  border-left: 3px solid #d32f2f;
+}
+
+.output-error .content {
+  padding: 8px 12px;
+  overflow-x: auto;
+}
+
+.error-traceback {
+  font-family: "JetBrains Mono", "Fira Code", "Menlo", "Consolas", monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* Images */
+.output-block img {
+  max-width: 100%;
+  display: block;
+}
+
+/* Rendered HTML / Markdown */
+.output-block .rendered-html {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.output-block .rendered-html h1,
+.output-block .rendered-html h2,
+.output-block .rendered-html h3 {
+  margin: 0.5em 0 0.3em;
+}
+
+.output-block .rendered-html p {
+  margin: 0.4em 0;
+}
+
+.output-block .rendered-html table {
+  border-collapse: collapse;
+  margin: 0.5em 0;
+}
+
+.output-block .rendered-html th,
+.output-block .rendered-html td {
+  border: 1px solid #ddd;
+  padding: 4px 8px;
+  text-align: left;
+}
+
+.output-block .rendered-html th {
+  background: #f5f5f5;
+}
+
+/* JSON toggle */
+.json-toggle {
+  cursor: pointer;
+  color: #1976d2;
+  font-size: 12px;
+  font-family: -apple-system, sans-serif;
+  margin-bottom: 4px;
+  user-select: none;
+}
+
+.json-content {
+  font-family: "JetBrains Mono", "Fira Code", "Menlo", "Consolas", monospace;
+  font-size: 12px;
+}
+
+/* Standalone output (orphan, no matching input cell) */
+.standalone-output {
+  background: white;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  border-left: 3px solid #9e9e9e;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}

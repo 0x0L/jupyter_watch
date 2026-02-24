@@ -4,11 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Jupyter Watch</title>
-    <link href="custom.css" rel="stylesheet" />
   </head>
 
   <body>
-    <div id="console"></div>
-    <script src="index.js"></script>
+    <header id="header">
+      <span class="title">Jupyter Watch</span>
+      <span id="status" class="status disconnected"></span>
+    </header>
+    <div id="notebook"></div>
+    <script type="module" src="/src/main.js"></script>
   </body>
 </html>
