@@ -48,8 +48,21 @@ function createCell(executionCount, code, parentMsgId) {
   source.classList.add("source");
   source.appendChild(renderCode(code));
 
+  // Copy button
+  const copyBtn = document.createElement("button");
+  copyBtn.classList.add("copy-btn");
+  copyBtn.textContent = "Copy";
+  copyBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(code).then(() => {
+      copyBtn.textContent = "Copied!";
+      setTimeout(() => { copyBtn.textContent = "Copy"; }, 1500);
+    });
+  });
+
   input.appendChild(gutter);
   input.appendChild(source);
+  input.appendChild(copyBtn);
 
   // Fold toggle
   input.addEventListener("click", () => {

@@ -119,6 +119,33 @@ body {
   display: none;
 }
 
+/* Copy button */
+.copy-btn {
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin: 6px 8px 0 0;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-family: -apple-system, sans-serif;
+  background: transparent;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  color: #666;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s;
+}
+
+.cell-input:hover .copy-btn {
+  opacity: 1;
+}
+
+.copy-btn:hover {
+  background: #e0e0e0;
+  border-color: #999;
+  color: #333;
+}
+
 /* Input area */
 .cell-input {
   display: flex;
