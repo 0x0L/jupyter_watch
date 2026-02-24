@@ -81,6 +81,23 @@ body {
   opacity: 0.8;
 }
 
+/* Autoscroll toggle */
+#autoscroll-label {
+  margin-left: 16px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  user-select: none;
+  opacity: 0.9;
+}
+
+#autoscroll-toggle {
+  accent-color: #90caf9;
+  cursor: pointer;
+}
+
 /* Notebook container */
 #notebook {
   max-width: 900px;

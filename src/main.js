@@ -12,9 +12,17 @@ const cells = new Map();
 
 // Auto-scroll: only if user hasn't scrolled up
 let autoScroll = true;
+const autoScrollToggle = document.getElementById("autoscroll-toggle");
+
 window.addEventListener("scroll", () => {
   const atBottom = window.innerHeight + window.scrollY >= document.body.scrollHeight - 50;
   autoScroll = atBottom;
+  autoScrollToggle.checked = autoScroll;
+});
+
+autoScrollToggle.addEventListener("change", () => {
+  autoScroll = autoScrollToggle.checked;
+  if (autoScroll) scrollToBottom();
 });
 
 function scrollToBottom() {
