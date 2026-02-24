@@ -143,6 +143,17 @@ async function main() {
   sock.subscribe("");
   console.log(`Subscribed to iopub: ${iopubUrl}`);
 
+  // Extract kernel UUID from connection filename
+  const connFileName = connFile.split("/").pop();
+  const kernelUUID = connFileName.replace(/^kernel-/, "").replace(/\.json$/, "");
+  const kernelInfoMsg = JSON.stringify({
+    msg_type: "_kernel_info",
+    content: {
+      kernel_id: kernelUUID,
+      connection_file: connFileName,
+    },
+  });
+
   // HTTP + WebSocket server
   const clients = new Set();
   const httpServer = createServer(serveStatic);
@@ -150,6 +161,7 @@ async function main() {
 
   wss.on("connection", (ws) => {
     clients.add(ws);
+    ws.send(kernelInfoMsg);
     console.log(`Client connected (${clients.size} total)`);
     ws.on("close", () => {
       clients.delete(ws);

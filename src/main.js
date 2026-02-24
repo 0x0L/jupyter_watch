@@ -5,6 +5,7 @@ import "highlight.js/styles/github.css";
 
 const notebook = document.getElementById("notebook");
 const statusDot = document.getElementById("status");
+const kernelInfoEl = document.getElementById("kernel-info");
 
 // Cell tracking: parent_msg_id -> cell DOM element
 const cells = new Map();
@@ -49,6 +50,11 @@ function createCell(executionCount, code, parentMsgId) {
 
   input.appendChild(gutter);
   input.appendChild(source);
+
+  // Fold toggle
+  input.addEventListener("click", () => {
+    cell.classList.toggle("collapsed");
+  });
 
   // Output area
   const output = document.createElement("div");
@@ -170,11 +176,34 @@ function handleMessage(msg) {
       break;
     }
 
-    case "status":
+    case "status": {
+      const state = content.execution_state;
+      if (state === "busy") {
+        statusDot.className = "status busy";
+      } else if (state === "idle") {
+        statusDot.className = "status connected";
+      }
+      break;
+    }
+
+    case "_kernel_info": {
+      const shortId = content.kernel_id.slice(0, 4);
+      const cmd = `jupyter console --existing ${shortId}`;
+      kernelInfoEl.innerHTML = `<span class="kernel-id">${shortId}</span> ${content.kernel_id.slice(4, 12)}…`;
+      kernelInfoEl.title = `Click to copy: ${cmd}`;
+      kernelInfoEl.onclick = () => {
+        navigator.clipboard.writeText(cmd).then(() => {
+          const prev = kernelInfoEl.innerHTML;
+          kernelInfoEl.innerHTML = prev + '<span class="copied">copied!</span>';
+          setTimeout(() => { kernelInfoEl.innerHTML = prev; }, 1500);
+        });
+      };
+      break;
+    }
+
     case "comm_open":
     case "comm_msg":
     case "comm_close":
-      // Silently ignore these
       break;
 
     default:
