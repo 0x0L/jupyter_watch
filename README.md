@@ -2,8 +2,6 @@
 
 A web-based jupyter kernel watcher experiment.
 
-https://github.com/0x0L/jupyter_watch/assets/3621629/9126782a-f8e3-42d8-85e1-5d86df11010a
-
 ## Setup
 
 ```shell

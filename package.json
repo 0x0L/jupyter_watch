@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "start": "node server.js"
+    "start": "node server.js",
+    "lint": "eslint . && prettier --check .",
+    "format": "prettier --write ."
   },
   "dependencies": {
     "ansi_up": "^6.0.2",
@@ -17,6 +19,9 @@
     "zeromq": "^6.4.2"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.0.2",
+    "prettier": "^3.8.1",
     "vite": "^6.2.0"
   }
 }

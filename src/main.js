@@ -95,7 +95,9 @@ function createCell(executionCount, code, parentMsgId) {
     e.stopPropagation();
     navigator.clipboard.writeText(code).then(() => {
       copyBtn.textContent = "Copied!";
-      setTimeout(() => { copyBtn.textContent = "Copy"; }, 1500);
+      setTimeout(() => {
+        copyBtn.textContent = "Copy";
+      }, 1500);
     });
   });
 
@@ -199,7 +201,7 @@ function handleMessage(msg) {
       // Try to append to existing stream element of same name in this cell
       const streamClass = `output-stream ${content.name || "stdout"}`;
       let streamEl = outputArea.querySelector(
-        `.output-block:last-child .output-stream.${content.name || "stdout"}`
+        `.output-block:last-child .output-stream.${content.name || "stdout"}`,
       );
 
       if (streamEl) {
@@ -245,7 +247,9 @@ function handleMessage(msg) {
       kernelInfoEl.onclick = () => {
         navigator.clipboard.writeText(uuid).then(() => {
           kernelInfoEl.textContent = "copied!";
-          setTimeout(() => { kernelInfoEl.textContent = uuid; }, 1500);
+          setTimeout(() => {
+            kernelInfoEl.textContent = uuid;
+          }, 1500);
         });
       };
       break;

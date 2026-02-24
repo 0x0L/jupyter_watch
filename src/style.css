@@ -55,7 +55,9 @@ body {
   background: var(--bg);
   color: var(--text);
   padding-top: 48px;
-  transition: background 0.3s, color 0.3s;
+  transition:
+    background 0.3s,
+    color 0.3s;
 }
 
 /* Header bar */
@@ -134,7 +136,10 @@ body {
   justify-content: center;
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-  transition: background 0.2s, transform 0.2s, opacity 0.2s;
+  transition:
+    background 0.2s,
+    transform 0.2s,
+    opacity 0.2s;
   user-select: none;
 }
 
@@ -216,7 +221,9 @@ body {
   color: var(--copy-text);
   cursor: pointer;
   opacity: 0;
-  transition: opacity 0.15s, background 0.15s;
+  transition:
+    opacity 0.15s,
+    background 0.15s;
 }
 
 .cell-input:hover .copy-btn {
@@ -419,7 +426,9 @@ body {
   justify-content: center;
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-  transition: background 0.2s, transform 0.2s;
+  transition:
+    background 0.2s,
+    transform 0.2s;
   user-select: none;
 }
 
@@ -434,13 +443,25 @@ body.dark .hljs {
 }
 
 body.dark .hljs-keyword,
-body.dark .hljs-selector-tag { color: #569cd6; }
+body.dark .hljs-selector-tag {
+  color: #569cd6;
+}
 body.dark .hljs-string,
-body.dark .hljs-attr { color: #ce9178; }
+body.dark .hljs-attr {
+  color: #ce9178;
+}
 body.dark .hljs-number,
-body.dark .hljs-literal { color: #b5cea8; }
-body.dark .hljs-comment { color: #6a9955; }
+body.dark .hljs-literal {
+  color: #b5cea8;
+}
+body.dark .hljs-comment {
+  color: #6a9955;
+}
 body.dark .hljs-built_in,
 body.dark .hljs-function,
-body.dark .hljs-title { color: #dcdcaa; }
-body.dark .hljs-type { color: #4ec9b0; }
+body.dark .hljs-title {
+  color: #dcdcaa;
+}
+body.dark .hljs-type {
+  color: #4ec9b0;
+}
