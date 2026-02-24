@@ -7,21 +7,52 @@ const notebook = document.getElementById("notebook");
 const statusDot = document.getElementById("status");
 const kernelInfoEl = document.getElementById("kernel-info");
 
+// Theme toggle
+const themeFab = document.getElementById("theme-fab");
+const sunIcon = document.getElementById("theme-icon-sun");
+const moonIcon = document.getElementById("theme-icon-moon");
+
+function applyTheme(dark) {
+  document.body.classList.toggle("dark", dark);
+  sunIcon.style.display = dark ? "none" : "block";
+  moonIcon.style.display = dark ? "block" : "none";
+  localStorage.setItem("theme", dark ? "dark" : "light");
+}
+
+// Restore saved preference or respect system preference
+const saved = localStorage.getItem("theme");
+if (saved) {
+  applyTheme(saved === "dark");
+} else {
+  applyTheme(window.matchMedia("(prefers-color-scheme: dark)").matches);
+}
+
+themeFab.addEventListener("click", () => {
+  applyTheme(!document.body.classList.contains("dark"));
+});
+
 // Cell tracking: parent_msg_id -> cell DOM element
 const cells = new Map();
 
 // Auto-scroll: only if user hasn't scrolled up
 let autoScroll = true;
 const autoScrollToggle = document.getElementById("autoscroll-toggle");
+const autoScrollFab = document.getElementById("autoscroll-fab");
+
+function updateFab() {
+  autoScrollFab.classList.toggle("off", !autoScroll);
+}
 
 window.addEventListener("scroll", () => {
   const atBottom = window.innerHeight + window.scrollY >= document.body.scrollHeight - 50;
   autoScroll = atBottom;
   autoScrollToggle.checked = autoScroll;
+  updateFab();
 });
 
 autoScrollToggle.addEventListener("change", () => {
   autoScroll = autoScrollToggle.checked;
+  updateFab();
   if (autoScroll) scrollToBottom();
 });
 
@@ -208,15 +239,13 @@ function handleMessage(msg) {
     }
 
     case "_kernel_info": {
-      const shortId = content.kernel_id.slice(0, 4);
-      const cmd = `jupyter console --existing ${shortId}`;
-      kernelInfoEl.innerHTML = `<span class="kernel-id">${shortId}</span> ${content.kernel_id.slice(4, 12)}…`;
-      kernelInfoEl.title = `Click to copy: ${cmd}`;
+      const uuid = content.kernel_id;
+      kernelInfoEl.textContent = uuid;
+      kernelInfoEl.title = "Click to copy kernel UUID";
       kernelInfoEl.onclick = () => {
-        navigator.clipboard.writeText(cmd).then(() => {
-          const prev = kernelInfoEl.innerHTML;
-          kernelInfoEl.innerHTML = prev + '<span class="copied">copied!</span>';
-          setTimeout(() => { kernelInfoEl.innerHTML = prev; }, 1500);
+        navigator.clipboard.writeText(uuid).then(() => {
+          kernelInfoEl.textContent = "copied!";
+          setTimeout(() => { kernelInfoEl.textContent = uuid; }, 1500);
         });
       };
       break;
