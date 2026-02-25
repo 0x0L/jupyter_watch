@@ -132,14 +132,14 @@ function serveStatic(req, res) {
 // --- Main ---
 
 async function main() {
-  const kernelId = process.argv[2];
-  if (!kernelId) {
-    console.error("Usage: node server.js <kernel-id>");
+  const arg = process.argv[2];
+  if (!arg) {
+    console.error("Usage: node server.js <kernel-id | connection-file>");
     process.exit(1);
   }
 
   // Find and load connection file
-  const connFile = findConnectionFile(kernelId);
+  const connFile = existsSync(arg) ? arg : findConnectionFile(arg);
   const connInfo = JSON.parse(readFileSync(connFile, "utf-8"));
   for (const field of ["transport", "ip", "iopub_port"]) {
     if (!connInfo[field]) {

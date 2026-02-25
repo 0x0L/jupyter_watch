@@ -38,8 +38,11 @@ The kernel UUID here is `2c91528a-a8f7-437a-83ba-94c0af8c5228`. You can refer to
 
 ### 2. Run jupyter-watch
 
+Pass a kernel UUID (or any unique prefix) or a path to a connection file:
+
 ```shell
 npx github:0x0L/jupyter_watch 2c91
+npx github:0x0L/jupyter_watch /path/to/kernel-2c91528a-....json
 ```
 
 This starts a server on http://localhost:8765. To use a different port:
