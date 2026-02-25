@@ -1,0 +1,6 @@
+src/
+.prettierrc
+.prettierignore
+eslint.config.js
+.git/
+.DS_Store
