@@ -203,6 +203,23 @@ body {
   transform: rotate(-90deg);
 }
 
+.cell.collapsed .cell-input .source {
+  max-height: 4.5em; /* ~3 lines at line-height 1.5 */
+  overflow: hidden;
+  position: relative;
+}
+
+.cell.collapsed .cell-input .source::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2.5em;
+  background: linear-gradient(transparent, var(--cell-input-bg));
+  pointer-events: none;
+}
+
 .cell.collapsed .cell-output {
   display: none;
 }
