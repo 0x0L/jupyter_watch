@@ -4,42 +4,59 @@ A web-based real-time viewer for Jupyter kernel output. Connects to a running ke
 
 Features: syntax highlighting, LaTeX math rendering, dark/light theme, cell folding, auto-scroll, click-to-copy.
 
-## Prerequisites
+## Quick start
 
-- Node.js >= 18
-- Jupyter (`pip install jupyter`)
+Prerequisites: Node.js >= 18 and a Jupyter kernel.
 
-## Setup
+### 1. Get a running kernel UUID
+
+If you already have a local running kernel (e.g. from JupyterLab or a notebook), you can get the kernel UUID with
+
+```python
+import ipykernel
+ipykernel.get_connection_file()
+```
+
+You could also check the active connection files:
 
 ```shell
+ls ~/.local/share/jupyter/runtime/kernel-*.json   # Linux
+ls ~/Library/Jupyter/runtime/kernel-*.json        # macOS
+```
+
+Each file is named `kernel-<uuid>.json`. The UUID identifies the kernel.
+
+To start a fresh standalone kernel:
+
+```
+$ jupyter kernel
+[KernelApp] Starting kernel 'python3'
+[KernelApp] Connection file: .../kernel-2c91528a-a8f7-437a-83ba-94c0af8c5228.json
+```
+
+The kernel UUID here is `2c91528a-a8f7-437a-83ba-94c0af8c5228`. You can refer to it by any unique prefix — `2c91528a`, `2c91`, or even `2c` if no other kernel shares that prefix.
+
+### 2. Run jupyter-watch
+
+```shell
+npx github:0x0L/jupyter_watch 2c91
+```
+
+This starts a server on http://localhost:8765. To use a different port:
+
+```shell
+PORT=3000 npx github:0x0L/jupyter_watch 2c91
+```
+
+## Build from source
+
+```shell
+git clone https://github.com/0x0L/jupyter_watch.git
+cd jupyter_watch
 npm install
 npm run build
+node server.js <kernel-id>
 ```
-
-## Usage
-
-1. Launch a Jupyter kernel
-
-```shell
-jupyter kernel
-# [KernelApp] Connection file: .../kernel-2c91528a-....json
-```
-
-2. Start the server (pass any unique prefix of the kernel UUID)
-
-```shell
-node server.js 2c91
-```
-
-3. Open http://localhost:8765
-
-4. Execute code from any Jupyter client
-
-```shell
-jupyter console --existing 2c91
-```
-
-The port can be configured with the `PORT` environment variable.
 
 ## Development
 
@@ -47,12 +64,10 @@ Run the backend and Vite dev server side by side:
 
 ```shell
 node server.js <kernel-id>   # backend on :8765
-npm run dev                   # Vite HMR on :5173
+npm run dev                  # Vite HMR on :5173
 ```
 
 Open http://localhost:5173 during development.
-
-## Scripts
 
 | Command          | Description                         |
 | ---------------- | ----------------------------------- |
