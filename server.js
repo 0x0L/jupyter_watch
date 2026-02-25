@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { createServer } from "node:http";
 import { createHmac } from "node:crypto";
 import { readFileSync, existsSync, readdirSync } from "node:fs";
