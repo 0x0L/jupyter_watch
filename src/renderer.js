@@ -43,7 +43,7 @@ export function renderCode(code, language = "python") {
  * Render MIME bundle following JupyterLab's priority order.
  * Returns a DOM element.
  */
-export function renderMIME(data, _metadata = {}) {
+export function renderMIME(data) {
   // Priority order
   if (data["text/html"]) {
     const div = document.createElement("div");

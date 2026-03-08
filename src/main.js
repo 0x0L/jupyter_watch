@@ -57,21 +57,16 @@ autoScrollToggle.addEventListener("change", () => {
 });
 
 function scrollToBottom() {
-  if (autoScroll) {
-    window.scrollTo(0, document.body.scrollHeight);
-  }
+  window.scrollTo(0, document.body.scrollHeight);
 }
 
 // --- Cell creation ---
 
-function getOrCreateCell(parentMsgId) {
-  if (parentMsgId && cells.has(parentMsgId)) {
-    return cells.get(parentMsgId);
-  }
-  return null;
+function findCell(parentMsgId) {
+  return cells.get(parentMsgId) || null;
 }
 
-function createCell(executionCount, code, parentMsgId) {
+function createCell(code, parentMsgId) {
   const cell = document.createElement("div");
   cell.classList.add("cell");
 
@@ -129,7 +124,7 @@ function getOutputArea(cell) {
   return cell.querySelector(".cell-output");
 }
 
-function createOutputBlock(_executionCount) {
+function createOutputBlock() {
   const block = document.createElement("div");
   block.classList.add("output-block");
 
@@ -164,28 +159,17 @@ function handleMessage(msg) {
 
   switch (msg_type) {
     case "execute_input": {
-      createCell(content.execution_count, content.code, parent_msg_id);
+      createCell(content.code, parent_msg_id);
       break;
     }
 
-    case "execute_result": {
-      const cell = getOrCreateCell(parent_msg_id);
-      const outputArea = cell ? getOutputArea(cell) : createStandaloneOutput();
-      const block = createOutputBlock(content.execution_count);
-      const rendered = renderMIME(content.data, content.metadata || {});
-      if (rendered) {
-        block.querySelector(".content").appendChild(rendered);
-        outputArea.appendChild(block);
-      }
-      break;
-    }
-
+    case "execute_result":
     case "display_data":
     case "update_display_data": {
-      const cell = getOrCreateCell(parent_msg_id);
+      const cell = findCell(parent_msg_id);
       const outputArea = cell ? getOutputArea(cell) : createStandaloneOutput();
-      const block = createOutputBlock(null);
-      const rendered = renderMIME(content.data, content.metadata || {});
+      const block = createOutputBlock();
+      const rendered = renderMIME(content.data);
       if (rendered) {
         block.querySelector(".content").appendChild(rendered);
         outputArea.appendChild(block);
@@ -194,7 +178,7 @@ function handleMessage(msg) {
     }
 
     case "stream": {
-      const cell = getOrCreateCell(parent_msg_id);
+      const cell = findCell(parent_msg_id);
       const outputArea = cell ? getOutputArea(cell) : createStandaloneOutput();
 
       // Try to append to existing stream element of same name in this cell
@@ -206,7 +190,7 @@ function handleMessage(msg) {
       if (streamEl) {
         streamEl.innerHTML += renderStream(content.text);
       } else {
-        const block = createOutputBlock(null);
+        const block = createOutputBlock();
         streamEl = document.createElement("div");
         streamEl.className = `output-stream ${streamName}`;
         streamEl.dataset.stream = streamName;
@@ -218,9 +202,9 @@ function handleMessage(msg) {
     }
 
     case "error": {
-      const cell = getOrCreateCell(parent_msg_id);
+      const cell = findCell(parent_msg_id);
       const outputArea = cell ? getOutputArea(cell) : createStandaloneOutput();
-      const block = createOutputBlock(null);
+      const block = createOutputBlock();
       block.classList.add("output-error");
       block.querySelector(".content").appendChild(renderError(content.traceback));
       outputArea.appendChild(block);
@@ -262,7 +246,7 @@ function handleMessage(msg) {
       break;
   }
 
-  scrollToBottom();
+  if (autoScroll) scrollToBottom();
 }
 
 // --- WebSocket connection with auto-reconnect ---
