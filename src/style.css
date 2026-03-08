@@ -270,7 +270,8 @@ body.dark .output-block .gutter.foldable:hover {
     background 0.15s;
 }
 
-.cell-input:hover .copy-btn {
+.cell-input:hover .copy-btn,
+.output-block:hover .copy-btn {
   opacity: 1;
 }
 

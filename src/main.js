@@ -137,8 +137,22 @@ function createOutputBlock() {
   const content = document.createElement("div");
   content.classList.add("content");
 
+  const copyBtn = document.createElement("button");
+  copyBtn.classList.add("copy-btn");
+  copyBtn.textContent = "Copy";
+  copyBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(content.textContent).then(() => {
+      copyBtn.textContent = "Copied!";
+      setTimeout(() => {
+        copyBtn.textContent = "Copy";
+      }, 1500);
+    });
+  });
+
   block.appendChild(gutter);
   block.appendChild(content);
+  block.appendChild(copyBtn);
   return block;
 }
 
