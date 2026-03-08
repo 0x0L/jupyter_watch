@@ -20,6 +20,8 @@ export default [
         setTimeout: "readonly",
         HTMLElement: "readonly",
         btoa: "readonly",
+        fetch: "readonly",
+        URL: "readonly",
       },
     },
   },

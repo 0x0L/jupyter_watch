@@ -8,6 +8,15 @@ import renderMathInElement from "katex/contrib/auto-render";
 import { marked } from "marked";
 import { AnsiUp } from "ansi_up";
 
+function addImageClickHandler(img) {
+  img.style.cursor = "pointer";
+  img.addEventListener("click", () => {
+    fetch(img.src)
+      .then((r) => r.blob())
+      .then((blob) => window.open(URL.createObjectURL(blob), "_blank"));
+  });
+}
+
 hljs.registerLanguage("python", python);
 hljs.registerLanguage("javascript", javascript);
 hljs.registerLanguage("bash", bash);
@@ -76,6 +85,7 @@ export function renderMIME(data, _metadata = {}) {
   if (data["image/svg+xml"]) {
     const img = document.createElement("img");
     img.src = "data:image/svg+xml;base64," + btoa(data["image/svg+xml"]);
+    addImageClickHandler(img);
     return img;
   }
 
@@ -83,6 +93,7 @@ export function renderMIME(data, _metadata = {}) {
     if (data[mime]) {
       const img = document.createElement("img");
       img.src = `data:${mime};base64,${data[mime]}`;
+      addImageClickHandler(img);
       return img;
     }
   }
