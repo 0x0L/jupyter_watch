@@ -81,7 +81,6 @@ function createCell(executionCount, code, parentMsgId) {
 
   const gutter = document.createElement("div");
   gutter.classList.add("gutter");
-  gutter.textContent = `In [${executionCount}]:`;
 
   const source = document.createElement("div");
   source.classList.add("source");
@@ -105,9 +104,9 @@ function createCell(executionCount, code, parentMsgId) {
   input.appendChild(source);
   input.appendChild(copyBtn);
 
-  // Fold toggle
-  input.addEventListener("click", () => {
-    cell.classList.toggle("collapsed");
+  // Fold toggle on gutter only
+  gutter.addEventListener("click", () => {
+    input.classList.toggle("collapsed");
   });
 
   // Output area
@@ -130,15 +129,15 @@ function getOutputArea(cell) {
   return cell.querySelector(".cell-output");
 }
 
-function createOutputBlock(executionCount) {
+function createOutputBlock(_executionCount) {
   const block = document.createElement("div");
   block.classList.add("output-block");
 
   const gutter = document.createElement("div");
-  gutter.classList.add("gutter");
-  if (executionCount != null) {
-    gutter.textContent = `Out [${executionCount}]:`;
-  }
+  gutter.classList.add("gutter", "foldable");
+  gutter.addEventListener("click", () => {
+    block.classList.toggle("collapsed");
+  });
 
   const content = document.createElement("div");
   content.classList.add("content");
@@ -221,13 +220,10 @@ function handleMessage(msg) {
     case "error": {
       const cell = getOrCreateCell(parent_msg_id);
       const outputArea = cell ? getOutputArea(cell) : createStandaloneOutput();
-      const errorDiv = document.createElement("div");
-      errorDiv.classList.add("output-error");
-      const contentDiv = document.createElement("div");
-      contentDiv.classList.add("content");
-      contentDiv.appendChild(renderError(content.traceback));
-      errorDiv.appendChild(contentDiv);
-      outputArea.appendChild(errorDiv);
+      const block = createOutputBlock(null);
+      block.classList.add("output-error");
+      block.querySelector(".content").appendChild(renderError(content.traceback));
+      outputArea.appendChild(block);
       break;
     }
 

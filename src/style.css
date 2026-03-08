@@ -187,29 +187,42 @@ body {
 }
 
 /* Cell folding */
-.cell-input {
+.cell-input .gutter,
+.output-block .gutter.foldable {
   cursor: pointer;
+  white-space: nowrap;
 }
 
-.cell-input .gutter::before {
+.cell-input .gutter:hover,
+.output-block .gutter.foldable:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+body.dark .cell-input .gutter:hover,
+body.dark .output-block .gutter.foldable:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.cell-input .gutter::before,
+.output-block .gutter.foldable::before {
   content: "\25BC";
-  font-size: 8px;
+  font-size: 11px;
   display: inline-block;
-  margin-right: 4px;
   transition: transform 0.15s;
 }
 
-.cell.collapsed .cell-input .gutter::before {
+.cell-input.collapsed .gutter::before,
+.output-block.collapsed .gutter.foldable::before {
   transform: rotate(-90deg);
 }
 
-.cell.collapsed .cell-input .source {
+.cell-input.collapsed .source {
   max-height: 4.5em; /* ~3 lines at line-height 1.5 */
   overflow: hidden;
   position: relative;
 }
 
-.cell.collapsed .cell-input .source::after {
+.cell-input.collapsed .source::after {
   content: "";
   position: absolute;
   bottom: 0;
@@ -220,8 +233,21 @@ body {
   pointer-events: none;
 }
 
-.cell.collapsed .cell-output {
-  display: none;
+.output-block.collapsed .content {
+  max-height: 4.5em;
+  overflow: hidden;
+  position: relative;
+}
+
+.output-block.collapsed .content::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2.5em;
+  background: linear-gradient(transparent, var(--cell-bg));
+  pointer-events: none;
 }
 
 /* Copy button */
@@ -262,10 +288,9 @@ body {
 
 .cell-input .gutter {
   flex-shrink: 0;
-  width: 80px;
-  padding: 8px 4px 8px 8px;
-  text-align: right;
-  font-family: "JetBrains Mono", "Fira Code", "Menlo", "Consolas", monospace;
+  width: 28px;
+  padding: 8px 8px;
+  text-align: center;
   font-size: 12px;
   color: var(--accent);
   user-select: none;
@@ -305,10 +330,9 @@ body {
 
 .output-block .gutter {
   flex-shrink: 0;
-  width: 80px;
-  padding: 8px 4px 8px 8px;
-  text-align: right;
-  font-family: "JetBrains Mono", "Fira Code", "Menlo", "Consolas", monospace;
+  width: 28px;
+  padding: 8px 8px;
+  text-align: center;
   font-size: 12px;
   color: var(--gutter-out);
   user-select: none;
