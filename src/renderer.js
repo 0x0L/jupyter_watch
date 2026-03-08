@@ -24,6 +24,19 @@ hljs.registerLanguage("json", json);
 
 const ansiUp = new AnsiUp();
 
+let plotlyReady = null;
+function loadPlotly() {
+  if (plotlyReady) return plotlyReady;
+  plotlyReady = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "https://cdn.plot.ly/plotly-2.35.2.min.js";
+    script.onload = resolve;
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+  return plotlyReady;
+}
+
 /**
  * Syntax-highlight code and return a <pre><code> element.
  */
@@ -45,6 +58,19 @@ export function renderCode(code, language = "python") {
  */
 export function renderMIME(data) {
   // Priority order
+  if (data["application/vnd.plotly.v1+json"]) {
+    const div = document.createElement("div");
+    const plotlyData = data["application/vnd.plotly.v1+json"];
+    loadPlotly().then(() => {
+      // eslint-disable-next-line no-undef
+      Plotly.newPlot(div, plotlyData.data, plotlyData.layout || {}, {
+        responsive: true,
+        ...(plotlyData.config || {}),
+      });
+    });
+    return div;
+  }
+
   if (data["text/html"]) {
     const div = document.createElement("div");
     div.classList.add("rendered-html");
