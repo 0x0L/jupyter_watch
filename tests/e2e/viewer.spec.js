@@ -30,6 +30,22 @@ handle = display(HTML('<b>initial display</b>'), display_id=True)
   execute("handle.update(HTML('<b>updated display</b>'))");
   await expect(page.locator(".jp-OutputArea b")).toHaveText("updated display");
   await expect(page.locator(".jp-OutputArea b")).toHaveCount(1);
+  await expect(page.locator(".cell-input .gutter").first()).toHaveText(/^In \[\d+\]:$/);
+  await expect(page.locator(".continuation-prompts").first()).toContainText("...:");
+  execute("6 * 7");
+  await expect(page.locator(".jp-OutputArea-executeResult").last()).toContainText("42");
+  await expect(page.locator(".jp-OutputArea-executeResult .jp-OutputPrompt").last()).toHaveText(
+    /^\[\d+\]:$/,
+  );
+  const input = page.locator(".cell-input").first();
+  await input.locator(".gutter").click();
+  await expect(input).toHaveClass(/collapsed/);
+  await expect(page.locator(".cell-output").first()).toBeVisible();
+  await expect(input.locator(".source")).toBeHidden();
+  await expect(input.getByRole("button", { name: "Expand input", exact: true })).toBeVisible();
+  await expect(input.locator(".gutter")).toHaveAttribute("aria-expanded", "false");
+  await input.getByRole("button", { name: "Expand input", exact: true }).click();
+  await expect(input.locator(".source")).toBeVisible();
   execute(`display(Markdown('**Markdown marker** and $x^2$'))
 display(HTML('<img src="invalid" onerror="document.body.dataset.compromised=1"><script>document.body.dataset.compromised=1</script><b>safe marker</b>'))
 display(SVG('<svg xmlns="http://www.w3.org/2000/svg" width="180" height="50"><text x="5" y="30">日本語 SVG</text></svg>'))
@@ -45,7 +61,19 @@ display({'application/vnd.plotly.v1+json': {'data': [{'x': [1,2,3], 'y': [2,1,4]
   const output = page.locator(".jp-OutputArea-child").first();
   await output.locator(".output-fold").click();
   await expect(output).toHaveClass(/collapsed/);
-  await output.locator(".output-fold").click();
+  await expect(output.locator(".jp-OutputArea-output")).toBeHidden();
+  await expect(input.locator(".source")).toBeVisible();
+  await expect(output.locator(".fold-placeholder")).toBeVisible();
+  await input.locator(".gutter").click();
+  await page.screenshot({
+    path: ".test-runtime/folded.png",
+    fullPage: true,
+    animations: "disabled",
+  });
+  await input.locator(".fold-placeholder").click();
+  await expect(output).toHaveClass(/collapsed/);
+  await output.locator(".fold-placeholder").click();
+  await expect(output.locator(".jp-OutputArea-output")).toBeVisible();
   await output.hover();
   await output.getByRole("button", { name: "Copy", exact: true }).click();
   await expect(output.getByRole("button", { name: "Copied!" })).toBeVisible();
@@ -56,7 +84,21 @@ display({'application/vnd.plotly.v1+json': {'data': [{'x': [1,2,3], 'y': [2,1,4]
   });
   await page.getByTitle("Toggle dark mode").click();
   await expect(page.locator("body")).toHaveClass("dark");
+  await expect(page.locator(".plotly-output .gtitle")).toBeVisible();
   await page.screenshot({ path: ".test-runtime/dark.png", fullPage: true, animations: "disabled" });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect
+    .poll(async () => {
+      const chart = await page.locator(".plotly-output .main-svg").first().boundingBox();
+      return chart.width;
+    })
+    .toBeLessThan(310);
+  await page.screenshot({
+    path: ".test-runtime/mobile.png",
+    fullPage: true,
+    animations: "disabled",
+  });
+  await page.setViewportSize({ width: 1280, height: 720 });
   await page.reload();
   await expect(page.locator("#status")).toHaveClass("status connected");
   await expect(page.locator(".jp-OutputArea-child")).toHaveCount(0);

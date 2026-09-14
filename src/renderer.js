@@ -26,6 +26,16 @@ export function renderCode(code, language = "python") {
   return pre;
 }
 
+export function foldPlaceholder(label, onExpand) {
+  const button = document.createElement("button");
+  button.className = "fold-placeholder";
+  button.textContent = "…";
+  button.title = label;
+  button.setAttribute("aria-label", label);
+  button.onclick = onExpand;
+  return button;
+}
+
 export function copyButton(getText) {
   const button = document.createElement("button");
   button.className = "copy-btn";
@@ -132,20 +142,28 @@ export class WatchOutputArea extends OutputArea {
   createOutputItem(model) {
     const panel = super.createOutputItem(model);
     if (!panel) return panel;
-    const prompt = panel.widgets[0];
     const toggle = document.createElement("button");
     toggle.className = "output-fold";
     toggle.textContent = "▾";
     toggle.title = "Fold output";
+    toggle.setAttribute("aria-label", "Fold output");
     toggle.setAttribute("aria-expanded", "true");
     toggle.onclick = () => {
       const collapsed = panel.node.classList.toggle("collapsed");
       toggle.textContent = collapsed ? "▸" : "▾";
       toggle.setAttribute("aria-expanded", String(!collapsed));
+      toggle.title = collapsed ? "Expand output" : "Fold output";
+      toggle.setAttribute("aria-label", toggle.title);
     };
-    prompt.node.replaceChildren(toggle);
-    const copy = new Widget({ node: copyButton(() => panel.widgets[1].node.textContent) });
-    panel.addWidget(copy);
+    panel.addWidget(new Widget({ node: foldPlaceholder("Expand output", () => toggle.click()) }));
+    // Preserve Jupyter's execution-count prompt; controls sit beside the output.
+    const controls = new Widget();
+    controls.addClass("output-controls");
+    controls.node.append(
+      toggle,
+      copyButton(() => panel.widgets[1].node.textContent),
+    );
+    panel.addWidget(controls);
     return panel;
   }
 }

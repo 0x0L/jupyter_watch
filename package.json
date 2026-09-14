@@ -17,6 +17,8 @@
   "dependencies": {
     "@jupyterlab/outputarea": "^4.6.3",
     "@jupyterlab/rendermime": "^4.6.3",
+    "@jupyterlab/theme-dark-extension": "^4.6.3",
+    "@jupyterlab/theme-light-extension": "^4.6.3",
     "@lumino/widgets": "^2.9.0",
     "highlight.js": "^11.11.1",
     "katex": "^0.16.28",
@@ -29,9 +31,9 @@
     "eslint": "^10.0.2",
     "jsdom": "^26.1.0",
     "prettier": "^3.8.1",
+    "sanitize-html": "^2.17.7",
     "vite": "^6.2.0",
     "vitest": "^3.2.7",
-    "sanitize-html": "^2.17.7",
     "ws": "^8.18.0"
   },
   "engines": {

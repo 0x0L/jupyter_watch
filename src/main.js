@@ -1,4 +1,10 @@
-import { renderCode, copyButton, rendermime, WatchOutputArea } from "./renderer.js";
+import {
+  renderCode,
+  copyButton,
+  foldPlaceholder,
+  rendermime,
+  WatchOutputArea,
+} from "./renderer.js";
 import { OutputRouter } from "./output-router.js";
 import { Widget } from "@lumino/widgets";
 import "@lumino/widgets/style/widget.css";
@@ -6,10 +12,17 @@ import "@jupyterlab/rendermime/style/base.css";
 import "@jupyterlab/outputarea/style/base.css";
 import "./style.css";
 import "katex/dist/katex.min.css";
-import "highlight.js/styles/github.css";
+import lightTheme from "@jupyterlab/theme-light-extension/style/variables.css?inline";
+import darkTheme from "@jupyterlab/theme-dark-extension/style/variables.css?inline";
+
+// Consume JupyterLab's complete palette rather than maintaining partial copies.
+const themeStyle = document.createElement("style");
+themeStyle.id = "jupyter-theme";
+document.head.appendChild(themeStyle);
 
 const notebook = document.getElementById("notebook");
 const statusDot = document.getElementById("status");
+const statusLabel = document.getElementById("status-label");
 const kernelInfoEl = document.getElementById("kernel-info");
 
 // Theme toggle
@@ -18,7 +31,10 @@ const sunIcon = document.getElementById("theme-icon-sun");
 const moonIcon = document.getElementById("theme-icon-moon");
 
 function applyTheme(dark) {
+  themeStyle.textContent = dark ? darkTheme : lightTheme;
   document.body.classList.toggle("dark", dark);
+  document.body.dataset.jpThemeLight = String(!dark);
+  themeFab.setAttribute("aria-pressed", String(dark));
   sunIcon.style.display = dark ? "none" : "block";
   moonIcon.style.display = dark ? "block" : "none";
   localStorage.setItem("theme", dark ? "dark" : "light");
@@ -80,17 +96,27 @@ function createCell(model) {
   input.hidden = true;
   const gutter = document.createElement("button");
   gutter.className = "gutter";
-  gutter.title = "Fold code";
+  gutter.title = "Fold input";
   gutter.setAttribute("aria-expanded", "true");
   gutter.onclick = () => {
-    gutter.setAttribute("aria-expanded", String(!input.classList.toggle("collapsed")));
+    const collapsed = input.classList.toggle("collapsed");
+    gutter.setAttribute("aria-expanded", String(!collapsed));
+    gutter.title = collapsed ? "Expand input" : "Fold input";
   };
+  const prompts = document.createElement("div");
+  prompts.className = "input-prompts";
+  prompts.appendChild(gutter);
+  const continuations = document.createElement("div");
+  continuations.className = "continuation-prompts";
+  continuations.setAttribute("aria-hidden", "true");
+  prompts.appendChild(continuations);
   const source = document.createElement("div");
   source.className = "source";
   let code = "";
   input.append(
-    gutter,
+    prompts,
     source,
+    foldPlaceholder("Expand input", () => gutter.click()),
     copyButton(() => code),
   );
   const output = document.createElement("div");
@@ -104,7 +130,13 @@ function createCell(model) {
       code = text;
       cell.className = "cell jp-ThemedContainer";
       input.hidden = false;
-      gutter.title = `Fold input [${count ?? ""}]`;
+      gutter.title = input.classList.contains("collapsed") ? "Expand input" : "Fold input";
+      gutter.textContent = `In [${count ?? ""}]:`;
+      continuations.textContent = code
+        .split("\n")
+        .slice(1)
+        .map(() => "...:")
+        .join("\n");
       source.replaceChildren(renderCode(code));
     },
     dispose() {
@@ -118,6 +150,11 @@ const router = new OutputRouter({
   onTruncate: () =>
     showNotice("Earlier activity was omitted to keep the viewer within its history limit."),
 });
+document.getElementById("clear-output").addEventListener("click", () => {
+  router.reset();
+  showNotice("");
+});
+
 let kernelAlive = false;
 let kernelBusy = false;
 function updateStatus() {
@@ -127,6 +164,8 @@ function updateStatus() {
     : kernelBusy
       ? "Kernel busy"
       : "Kernel connected";
+  statusDot.setAttribute("aria-label", statusDot.title);
+  statusLabel.textContent = !kernelAlive ? "Offline" : kernelBusy ? "Busy" : "Connected";
 }
 function handleMessage(msg) {
   const type = msg.header?.msg_type || msg.msg_type;
@@ -189,6 +228,8 @@ function connect() {
     kernelAlive = false;
     updateStatus();
     statusDot.title = "Viewer disconnected; reconnecting";
+    statusLabel.textContent = "Reconnecting";
+    statusDot.setAttribute("aria-label", statusDot.title);
     setTimeout(() => {
       reconnectDelay = Math.min(reconnectDelay * 2, MAX_RECONNECT_DELAY);
       connect();

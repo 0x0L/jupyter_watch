@@ -79,6 +79,8 @@ uv run python tests/package_smoke.py
 
 Python tests exercise validation, live-only delivery, slow readers, security, full signed messages and buffers, heartbeat loss, and shutdown without stopping the kernel. Chromium tests exercise rendering, controls, clearing, cross-cell updates, empty displays after reload, offline reconnect, and Vite's proxy. Test fixtures use uv and own only their test kernels. The package smoke test installs the wheel into an isolated environment, runs outside the checkout without Node on PATH, verifies HTTP assets and WebSocket output, and checks the source distribution assets.
 
+The interface uses a Qt Console-inspired continuous transcript with `In [n]:` and `Out[n]:` prompts. JupyterLab supplies the light/dark theme variables, output models, execution-result prompts, and MIME renderers. A small local stylesheet adapts their layout; the viewer remains read-only, with no executable input prompt. Click an `In [n]:` prompt to fold its input; each output has a separate fold control. Folded sections show a clickable ellipsis that expands them again.
+
 ## Architecture and behavior
 
 - `src/jupyter_watch/cli.py`: argparse setup and application lifecycle on one asyncio loop.

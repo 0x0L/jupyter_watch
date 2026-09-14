@@ -1,490 +1,431 @@
-:root {
-  --bg: #f0f0f0;
-  --text: #333;
-  --cell-bg: #fff;
-  --cell-input-bg: #f7f7f7;
-  --cell-border: #e0e0e0;
-  --header-bg: #1976d2;
-  --accent: #1976d2;
-  --gutter-out: #d32f2f;
-  --error-bg: #fce4e4;
-  --error-border: #d32f2f;
-  --stderr-bg: #fff0f0;
-  --stderr-text: #c62828;
-  --table-header-bg: #f5f5f5;
-  --table-border: #ddd;
-  --copy-border: #ccc;
-  --copy-hover-bg: #e0e0e0;
-  --copy-hover-border: #999;
-  --copy-text: #666;
-  --standalone-border: #9e9e9e;
-  --mono: "JetBrains Mono", "Fira Code", "Menlo", "Consolas", monospace;
-  --shadow: rgba(0, 0, 0, 0.08);
+/* JupyterLab supplies theme tokens and rich-output styles. This small shell
+   follows Qt Console's continuous transcript and In / Out prompt layout. */
+body {
+  --console-mono: Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  --jp-code-font-family: var(--console-mono);
+  --jp-code-font-size: 13px;
+  --jp-code-line-height: 1.5;
+  --jp-code-padding: 0px;
+  --jp-cell-prompt-width: 12ch;
+  --jp-cell-prompt-font-family: var(--console-mono);
+  --jp-cell-prompt-letter-spacing: 0;
+  --jp-cell-prompt-opacity: 1;
+  --console-in: #000080;
+  --console-out: #8b0000;
+  --jp-cell-outprompt-font-color: var(--console-out);
+  margin: 0;
+  padding: 60px 0 32px;
+  color: var(--jp-content-font-color1);
+  background: var(--jp-layout-color0);
+  font-family: var(--jp-ui-font-family);
+  font-size: var(--jp-ui-font-size1);
 }
 
 body.dark {
-  --bg: #1e1e1e;
-  --text: #d4d4d4;
-  --cell-bg: #252526;
-  --cell-input-bg: #2d2d2d;
-  --cell-border: #404040;
-  --header-bg: #1565c0;
-  --accent: #64b5f6;
-  --gutter-out: #ef9a9a;
-  --error-bg: #3e2020;
-  --error-border: #ef5350;
-  --stderr-bg: #3e2020;
-  --stderr-text: #ef9a9a;
-  --table-header-bg: #333;
-  --table-border: #555;
-  --copy-border: #555;
-  --copy-hover-bg: #404040;
-  --copy-hover-border: #777;
-  --copy-text: #aaa;
-  --standalone-border: #666;
-  --shadow: rgba(0, 0, 0, 0.3);
+  --console-in: #80b5ff;
+  --console-out: #ff9090;
+  color-scheme: dark;
 }
 
 * {
-  margin: 0;
-  padding: 0;
   box-sizing: border-box;
 }
-
-body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  padding-top: 48px;
-  transition:
-    background 0.3s,
-    color 0.3s;
+button,
+input {
+  font: inherit;
+}
+button {
+  color: inherit;
+  cursor: pointer;
+}
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--jp-brand-color1);
+  outline-offset: 2px;
 }
 
-/* Header bar */
 #header {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 48px;
-  background: var(--header-bg);
-  color: white;
+  inset: 0 0 auto;
+  min-height: 46px;
   display: flex;
   align-items: center;
-  padding: 0 20px;
-  z-index: 100;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
-}
-
-#header .title {
-  font-size: 16px;
-  font-weight: 600;
-  letter-spacing: 0.3px;
-}
-
-.status {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  margin-left: 8px;
-}
-
-.status.connected {
-  background: #4caf50;
-  box-shadow: 0 0 4px #4caf50;
-}
-
-.status.disconnected {
-  background: #f44336;
-  box-shadow: 0 0 4px #f44336;
-}
-
-.status.busy {
-  background: #ff9800;
-  box-shadow: 0 0 4px #ff9800;
-}
-
-/* Kernel info */
-#kernel-info {
-  margin-left: auto;
-  font-family: var(--mono);
+  gap: 12px;
+  padding: 8px 20px;
+  background: var(--jp-layout-color1);
+  border-bottom: 1px solid var(--jp-border-color2);
   font-size: 12px;
-  opacity: 0.9;
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 4px;
-  transition: background 0.15s;
-}
-
-#kernel-info:hover {
-  background: rgba(255, 255, 255, 0.15);
-}
-
-/* Autoscroll FAB */
-#autoscroll-fab {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
   z-index: 100;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: var(--header-bg);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-  transition:
-    background 0.2s,
-    transform 0.2s,
-    opacity 0.2s;
-  user-select: none;
 }
-
-#autoscroll-fab:hover {
-  background: var(--accent);
-  transform: scale(1.1);
-}
-
-#autoscroll-fab svg {
-  transform: rotate(90deg);
-  transition: opacity 0.2s;
-}
-
-#autoscroll-fab.off {
-  background: #9e9e9e;
-}
-
-#autoscroll-fab.off svg {
-  opacity: 0.5;
-}
-
-#autoscroll-fab #autoscroll-toggle {
-  position: absolute;
-  opacity: 0;
-  width: 0;
-  height: 0;
-  pointer-events: none;
-}
-
-/* Notebook container */
-#notebook {
-  max-width: 1200px;
-  margin: 24px auto;
-  padding: 0 32px;
-}
-
-/* Cell */
-.cell {
-  background: var(--cell-bg);
-  border-radius: 4px;
-  margin-bottom: 16px;
-  border-left: 3px solid var(--accent);
-  box-shadow: 0 1px 3px var(--shadow);
-  overflow: hidden;
-}
-
-/* Cell folding */
-.cell-input .gutter,
-.output-block .gutter.foldable {
-  cursor: pointer;
+.title {
+  font-size: 13px;
+  font-weight: 600;
   white-space: nowrap;
 }
-
-.cell-input .gutter:hover,
-.output-block .gutter.foldable:hover {
-  background: rgba(0, 0, 0, 0.05);
+.viewer-label {
+  padding-left: 12px;
+  border-left: 1px solid var(--jp-border-color2);
+  color: var(--jp-ui-font-color2);
 }
-
-body.dark .cell-input .gutter:hover,
-body.dark .output-block .gutter.foldable:hover {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.cell-input .gutter::before,
-.output-block .gutter.foldable::before {
-  content: "\25BC";
-  font-size: 11px;
-  display: inline-block;
-  transition: transform 0.15s;
-}
-
-.cell-input.collapsed .gutter::before,
-.output-block.collapsed .gutter.foldable::before {
-  transform: rotate(-90deg);
-}
-
-.cell-input.collapsed .source {
-  max-height: 4.5em; /* ~3 lines at line-height 1.5 */
-  overflow: hidden;
-  position: relative;
-}
-
-.cell-input.collapsed .source::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 2.5em;
-  background: linear-gradient(transparent, var(--cell-input-bg));
-  pointer-events: none;
-}
-
-.output-block.collapsed .content {
-  max-height: 4.5em;
-  overflow: hidden;
-  position: relative;
-}
-
-.output-block.collapsed .content::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 2.5em;
-  background: linear-gradient(transparent, var(--cell-bg));
-  pointer-events: none;
-}
-
-/* Copy button */
-.copy-btn {
-  flex-shrink: 0;
-  align-self: flex-start;
-  margin: 6px 8px 0 0;
-  padding: 2px 8px;
-  font-size: 11px;
-  font-family: -apple-system, sans-serif;
-  background: transparent;
-  border: 1px solid var(--copy-border);
-  border-radius: 3px;
-  color: var(--copy-text);
-  cursor: pointer;
-  opacity: 0;
-  transition:
-    opacity 0.15s,
-    background 0.15s;
-}
-
-.cell-input:hover .copy-btn,
-.output-block:hover .copy-btn {
-  opacity: 1;
-}
-
-.copy-btn:hover {
-  background: var(--copy-hover-bg);
-  border-color: var(--copy-hover-border);
-  color: var(--text);
-}
-
-/* Input area */
-.cell-input {
-  display: flex;
-  background: var(--cell-input-bg);
-  border-bottom: 1px solid var(--cell-border);
-}
-
-.cell-input .gutter {
-  flex-shrink: 0;
-  width: 28px;
-  padding: 8px 8px;
-  text-align: center;
-  font-size: 12px;
-  color: var(--accent);
-  user-select: none;
-}
-
-.cell-input .source {
-  flex: 1;
-  overflow-x: auto;
-  padding: 8px 12px;
-}
-
-.cell-input .source pre {
-  margin: 0;
-  font-family: var(--mono);
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-.cell-input .source code {
-  background: transparent;
-  padding: 0;
-}
-
-/* Output area */
-.cell-output {
-  padding: 0;
-}
-
-.cell-output:empty {
-  display: none;
-}
-
-/* Standalone output (orphan, no matching input cell) */
-.standalone-output {
-  background: var(--cell-bg);
-  border-radius: 4px;
-  margin-bottom: 16px;
-  border-left: 3px solid var(--standalone-border);
-  box-shadow: 0 1px 3px var(--shadow);
-  overflow: hidden;
-}
-
-/* Theme FAB */
-#theme-fab {
-  position: fixed;
-  bottom: 76px;
-  right: 24px;
-  z-index: 100;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: var(--header-bg);
-  color: white;
-  border: none;
+.connection-info {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 7px;
+  min-width: 0;
+  margin-left: 12px;
+  color: var(--jp-ui-font-color2);
+}
+#status-label {
+  font-size: 11px;
+  white-space: nowrap;
+}
+.toolbar-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+#autoscroll-fab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 0 8px;
+  border-radius: 5px;
+  white-space: nowrap;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-  transition:
-    background 0.2s,
-    transform 0.2s;
-  user-select: none;
 }
-
-#theme-fab:hover {
-  transform: scale(1.1);
+#autoscroll-toggle {
+  margin: 0;
+  accent-color: var(--jp-brand-color1);
 }
-
-/* Dark mode: highlight.js overrides */
-body.dark .hljs {
+#autoscroll-fab.off {
+  color: var(--jp-ui-font-color2);
+}
+#theme-fab,
+#clear-output {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 28px;
+  padding: 3px 9px;
+  background: var(--jp-layout-color0);
+  border: 1px solid var(--jp-border-color2);
+  border-radius: 5px;
+  white-space: nowrap;
+}
+#autoscroll-fab:hover,
+#theme-fab:hover,
+#clear-output:hover,
+#kernel-info:hover {
+  background: var(--jp-layout-color2);
+}
+#kernel-info {
+  padding: 2px 5px;
+  max-width: 30vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   background: transparent;
-  color: #d4d4d4;
+  border: 0;
+  font-family: var(--console-mono);
+  font-size: 11px;
+  color: var(--jp-ui-font-color2);
+}
+.status {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.status.connected {
+  background: var(--jp-success-color1);
+}
+.status.busy {
+  background: var(--jp-warn-color1);
+}
+.status.disconnected {
+  background: var(--jp-error-color1);
 }
 
-body.dark .hljs-keyword,
-body.dark .hljs-selector-tag {
-  color: #569cd6;
+#notebook {
+  margin: 0;
+  padding: 8px 20px;
 }
-body.dark .hljs-string,
-body.dark .hljs-attr {
-  color: #ce9178;
+.cell,
+.standalone-output {
+  margin: 0 0 20px;
 }
-body.dark .hljs-number,
-body.dark .hljs-literal {
-  color: #b5cea8;
+.cell > .cell-output {
+  margin-top: 4px;
 }
-body.dark .hljs-comment {
-  color: #6a9955;
+.cell-input {
+  display: flex;
+  align-items: flex-start;
+  position: relative;
 }
-body.dark .hljs-built_in,
-body.dark .hljs-function,
-body.dark .hljs-title {
-  color: #dcdcaa;
-}
-body.dark .hljs-type {
-  color: #4ec9b0;
-}
-
-/* Map the watcher palette to the variables used by Jupyter's renderers. */
-body {
-  --jp-code-font-family: var(--mono);
-  --jp-code-font-size: 13px;
-  --jp-code-line-height: 1.5;
-  --jp-code-padding: 8px;
-  --jp-content-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --jp-content-font-size1: 14px;
-  --jp-content-line-height: 1.6;
-  --jp-content-font-color0: var(--text);
-  --jp-content-font-color1: var(--text);
-  --jp-content-font-color2: var(--copy-text);
-  --jp-content-link-color: var(--accent);
-  --jp-layout-color0: var(--cell-bg);
-  --jp-layout-color1: var(--cell-bg);
-  --jp-layout-color2: var(--cell-input-bg);
-  --jp-border-color1: var(--cell-border);
-  --jp-border-color2: var(--table-border);
-  --jp-border-width: 1px;
-  --jp-cell-prompt-width: 28px;
-  --jp-cell-outprompt-font-color: var(--gutter-out);
-  --jp-cell-prompt-font-family: var(--mono);
-  --jp-cell-prompt-opacity: 1;
-  --jp-cell-prompt-letter-spacing: 0;
-  --jp-rendermime-error-background: var(--error-bg);
-  --jp-ui-font-color1: var(--text);
-  --jp-ui-font-family: var(--jp-content-font-family);
-  --jp-ui-font-size1: 14px;
-}
-
 .cell-input[hidden] {
   display: none;
 }
-.cell-input > .gutter {
+.input-prompts,
+.jp-OutputArea .jp-OutputPrompt {
+  flex: 0 0 var(--jp-cell-prompt-width);
+  width: var(--jp-cell-prompt-width);
+  font: var(--jp-code-font-size) / var(--jp-code-line-height) var(--console-mono);
+  text-align: right;
+  padding: 0 10px 0 0;
+  border: 0;
+  white-space: nowrap;
+}
+.input-prompts {
+  color: var(--console-in);
+}
+.gutter {
+  display: block;
+  position: relative;
+  width: 100%;
+  padding: 0;
   border: 0;
   background: transparent;
+  font: inherit;
+  text-align: right;
 }
+.gutter::before {
+  content: "▾";
+  position: absolute;
+  left: 0;
+  width: 20px;
+  text-align: center;
+  opacity: 0.65;
+}
+.gutter:hover::before,
+.gutter:focus-visible::before {
+  opacity: 1;
+}
+.collapsed .gutter::before {
+  content: "▸";
+  opacity: 1;
+}
+.continuation-prompts {
+  white-space: pre;
+}
+.cell-input.collapsed .continuation-prompts {
+  display: none;
+}
+.source {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+}
+.source pre,
+.jp-OutputArea pre {
+  margin: 0;
+  font: var(--jp-code-font-size) / var(--jp-code-line-height) var(--console-mono);
+}
+.source code {
+  background: transparent;
+  padding: 0;
+}
+.cell-input.collapsed .source {
+  display: none;
+}
+
 .jp-OutputArea-child {
   position: relative;
+  flex-direction: row;
 }
 .jp-OutputArea .jp-OutputArea-output {
-  padding: 8px 12px;
   min-width: 0;
+  padding: 0;
+  border: 0;
+}
+.jp-OutputArea-executeResult .jp-OutputPrompt::before {
+  content: "Out";
 }
 .jp-OutputArea .jp-OutputArea-prompt {
-  padding: 8px 0;
-}
-.output-fold {
-  border: 0;
-  background: transparent;
-  color: var(--gutter-out);
-  cursor: pointer;
+  color: var(--console-out);
 }
 .jp-OutputArea-child.collapsed .jp-OutputArea-output {
-  max-height: 4.5em;
-  overflow: hidden;
+  display: none;
 }
-.jp-OutputArea-child:hover .copy-btn,
-.copy-btn:focus-visible {
-  opacity: 1;
+.fold-placeholder {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  min-width: 38px;
+  height: 20px;
+  padding: 0 10px 4px;
+  margin: 1px 0;
+  border: 1px solid var(--jp-border-color2);
+  border-radius: 5px;
+  background: var(--jp-layout-color1);
+  color: var(--jp-ui-font-color2);
+  font: 18px / 1 var(--console-mono);
+}
+.collapsed > .fold-placeholder {
+  display: inline-flex;
+}
+.fold-placeholder:hover {
+  color: var(--jp-brand-color1);
+  border-color: var(--jp-brand-color1);
+  background: var(--jp-layout-color2);
 }
 .jp-OutputArea img {
   max-width: 100%;
 }
-.jp-OutputArea pre {
-  font-family: var(--mono);
-  font-size: 13px;
-  line-height: 1.5;
-}
-.jp-OutputArea [data-mime-type="application/vnd.jupyter.stderr"] {
-  background: var(--error-bg);
-}
 .jp-OutputArea details > summary {
-  color: var(--accent);
+  color: var(--jp-content-link-color);
   cursor: pointer;
 }
 .plotly-output {
   min-height: 300px;
 }
+body.dark .jp-OutputArea img[src^="data:image/svg+xml"] {
+  background: white;
+}
+
+.copy-btn,
+.output-fold {
+  padding: 0 5px;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  background: var(--jp-layout-color0);
+  color: var(--jp-ui-font-color2);
+  font: 11px / 18px var(--jp-ui-font-family);
+  opacity: 0;
+}
+.cell-input > .copy-btn {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+.output-controls {
+  display: contents;
+}
+.output-controls .copy-btn {
+  position: absolute;
+  top: 0;
+  right: 0;
+  margin: 0;
+}
+.output-fold {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 20px;
+  padding: 0;
+  opacity: 1;
+  color: var(--jp-ui-font-color2);
+  font-size: 16px;
+  border-radius: 4px;
+}
+.cell-input:hover > .copy-btn,
+.jp-OutputArea-child:hover .copy-btn,
+.jp-OutputArea-child:hover .output-fold,
+.copy-btn:focus-visible,
+.output-fold:focus-visible,
+.collapsed .output-fold {
+  opacity: 1;
+}
+.copy-btn:hover,
+.output-fold:hover {
+  border-color: var(--jp-border-color2);
+  background: var(--jp-layout-color2);
+}
+
+/* Keep the existing lightweight highlighter, using Jupyter's syntax palette. */
+.hljs {
+  color: var(--jp-mirror-editor-variable-color);
+}
+.hljs-keyword,
+.hljs-selector-tag {
+  color: var(--jp-mirror-editor-keyword-color);
+  font-weight: 600;
+}
+.hljs-string,
+.hljs-attr {
+  color: var(--jp-mirror-editor-string-color);
+}
+.hljs-number,
+.hljs-literal {
+  color: var(--jp-mirror-editor-number-color);
+}
+.hljs-comment {
+  color: var(--jp-mirror-editor-comment-color);
+  font-style: italic;
+}
+.hljs-built_in,
+.hljs-type {
+  color: var(--jp-mirror-editor-builtin-color);
+}
+.hljs-title,
+.hljs-function {
+  color: var(--jp-mirror-editor-def-color);
+}
+
+#notebook:empty::before {
+  content: "No output yet";
+  display: block;
+  margin: 28px 0 8px var(--jp-cell-prompt-width);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--jp-ui-font-color1);
+}
+#notebook:empty::after {
+  content: "New kernel activity will appear here.";
+  display: block;
+  margin-left: var(--jp-cell-prompt-width);
+  color: var(--jp-ui-font-color2);
+  font-size: 12px;
+}
 #notice {
-  max-width: 1136px;
-  margin: 16px auto 0;
-  padding: 0 16px;
-  color: var(--copy-text);
-  font-size: 13px;
+  margin: 0 20px 8px;
+  color: var(--jp-ui-font-color2);
+  font-size: 12px;
 }
 #notice:empty {
   display: none;
 }
 
-.jp-OutputArea pre {
-  color: var(--text);
+@media (max-width: 760px) {
+  #header {
+    padding: 8px 12px;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .viewer-label {
+    display: none;
+  }
+  .connection-info {
+    order: 3;
+    flex-basis: 100%;
+    margin-left: 0;
+  }
+  #kernel-info {
+    max-width: calc(100vw - 140px);
+    text-align: left;
+  }
+  body {
+    padding-top: 86px;
+  }
+  #notebook {
+    padding: 8px 12px;
+  }
+  .toolbar-controls {
+    gap: 3px;
+  }
+  #theme-fab,
+  #clear-output,
+  #autoscroll-fab {
+    padding-left: 6px;
+    padding-right: 6px;
+  }
 }
-body.dark .jp-OutputArea img[src^="data:image/svg+xml"] {
-  background: white;
+@media (prefers-reduced-motion: no-preference) {
+  button,
+  #autoscroll-fab {
+    transition:
+      background-color 120ms ease,
+      border-color 120ms ease;
+  }
 }
