@@ -1,0 +1,43 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "jupyter-watch"
+version = "0.1.0"
+description = "A passive, local web viewer for Jupyter kernel output"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+dependencies = ["jupyter-client>=8.6,<9", "tornado>=6.4,<7"]
+
+[project.scripts]
+jupyter-watch = "jupyter_watch.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "ipykernel>=6.29",
+    "ruff>=0.11",
+    "matplotlib>=3.11.2",
+    "numpy>=2.4.6",
+    "pandas>=3.0.5",
+    "jupyter-console>=6.6.3",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/jupyter_watch"]
+
+[tool.hatch.build.targets.sdist]
+include = ["/src", "/tests", "/index.html", "/*.js", "/package*.json", "/pyproject.toml", "/uv.lock", "/.python-version", "/hatch_build.py", "/README.md", "/LICENSE", "/.prettier*", "/.gitignore"]
+
+[tool.hatch.build.hooks.custom]
+
+[tool.ruff]
+line-length = 100
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]

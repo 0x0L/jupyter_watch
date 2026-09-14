@@ -325,123 +325,6 @@ body.dark .output-block .gutter.foldable:hover {
   display: none;
 }
 
-/* Output block (one per output message) */
-.output-block {
-  display: flex;
-}
-
-.output-block .gutter {
-  flex-shrink: 0;
-  width: 28px;
-  padding: 8px 8px;
-  text-align: center;
-  font-size: 12px;
-  color: var(--gutter-out);
-  user-select: none;
-}
-
-.output-block .content {
-  flex: 1;
-  padding: 8px 12px;
-  overflow-x: auto;
-  min-width: 0;
-}
-
-.output-block pre {
-  margin: 0;
-  font-family: var(--mono);
-  font-size: 13px;
-  line-height: 1.5;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-}
-
-/* Stream output */
-.output-stream {
-  font-family: var(--mono);
-  font-size: 13px;
-  line-height: 1.5;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-}
-
-.output-stream.stderr {
-  background: var(--stderr-bg);
-  color: var(--stderr-text);
-}
-
-/* Error output */
-.output-error {
-  background: var(--error-bg);
-  border-left: 3px solid var(--error-border);
-}
-
-.output-error .content {
-  padding: 8px 12px;
-  overflow-x: auto;
-}
-
-.error-traceback {
-  font-family: var(--mono);
-  font-size: 13px;
-  line-height: 1.5;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-}
-
-/* Images */
-.output-block img {
-  max-width: 100%;
-  display: block;
-}
-
-/* Rendered HTML / Markdown */
-.output-block .rendered-html {
-  font-size: 14px;
-  line-height: 1.6;
-}
-
-.output-block .rendered-html h1,
-.output-block .rendered-html h2,
-.output-block .rendered-html h3 {
-  margin: 0.5em 0 0.3em;
-}
-
-.output-block .rendered-html p {
-  margin: 0.4em 0;
-}
-
-.output-block .rendered-html table {
-  border-collapse: collapse;
-  margin: 0.5em 0;
-}
-
-.output-block .rendered-html th,
-.output-block .rendered-html td {
-  border: 1px solid var(--table-border);
-  padding: 4px 8px;
-  text-align: left;
-}
-
-.output-block .rendered-html th {
-  background: var(--table-header-bg);
-}
-
-/* JSON toggle */
-.json-toggle {
-  cursor: pointer;
-  color: var(--accent);
-  font-size: 12px;
-  font-family: -apple-system, sans-serif;
-  margin-bottom: 4px;
-  user-select: none;
-}
-
-.json-content {
-  font-family: var(--mono);
-  font-size: 12px;
-}
-
 /* Standalone output (orphan, no matching input cell) */
 .standalone-output {
   background: var(--cell-bg);
@@ -507,4 +390,101 @@ body.dark .hljs-title {
 }
 body.dark .hljs-type {
   color: #4ec9b0;
+}
+
+/* Map the watcher palette to the variables used by Jupyter's renderers. */
+body {
+  --jp-code-font-family: var(--mono);
+  --jp-code-font-size: 13px;
+  --jp-code-line-height: 1.5;
+  --jp-code-padding: 8px;
+  --jp-content-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --jp-content-font-size1: 14px;
+  --jp-content-line-height: 1.6;
+  --jp-content-font-color0: var(--text);
+  --jp-content-font-color1: var(--text);
+  --jp-content-font-color2: var(--copy-text);
+  --jp-content-link-color: var(--accent);
+  --jp-layout-color0: var(--cell-bg);
+  --jp-layout-color1: var(--cell-bg);
+  --jp-layout-color2: var(--cell-input-bg);
+  --jp-border-color1: var(--cell-border);
+  --jp-border-color2: var(--table-border);
+  --jp-border-width: 1px;
+  --jp-cell-prompt-width: 28px;
+  --jp-cell-outprompt-font-color: var(--gutter-out);
+  --jp-cell-prompt-font-family: var(--mono);
+  --jp-cell-prompt-opacity: 1;
+  --jp-cell-prompt-letter-spacing: 0;
+  --jp-rendermime-error-background: var(--error-bg);
+  --jp-ui-font-color1: var(--text);
+  --jp-ui-font-family: var(--jp-content-font-family);
+  --jp-ui-font-size1: 14px;
+}
+
+.cell-input[hidden] {
+  display: none;
+}
+.cell-input > .gutter {
+  border: 0;
+  background: transparent;
+}
+.jp-OutputArea-child {
+  position: relative;
+}
+.jp-OutputArea .jp-OutputArea-output {
+  padding: 8px 12px;
+  min-width: 0;
+}
+.jp-OutputArea .jp-OutputArea-prompt {
+  padding: 8px 0;
+}
+.output-fold {
+  border: 0;
+  background: transparent;
+  color: var(--gutter-out);
+  cursor: pointer;
+}
+.jp-OutputArea-child.collapsed .jp-OutputArea-output {
+  max-height: 4.5em;
+  overflow: hidden;
+}
+.jp-OutputArea-child:hover .copy-btn,
+.copy-btn:focus-visible {
+  opacity: 1;
+}
+.jp-OutputArea img {
+  max-width: 100%;
+}
+.jp-OutputArea pre {
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.jp-OutputArea [data-mime-type="application/vnd.jupyter.stderr"] {
+  background: var(--error-bg);
+}
+.jp-OutputArea details > summary {
+  color: var(--accent);
+  cursor: pointer;
+}
+.plotly-output {
+  min-height: 300px;
+}
+#notice {
+  max-width: 1136px;
+  margin: 16px auto 0;
+  padding: 0 16px;
+  color: var(--copy-text);
+  font-size: 13px;
+}
+#notice:empty {
+  display: none;
+}
+
+.jp-OutputArea pre {
+  color: var(--text);
+}
+body.dark .jp-OutputArea img[src^="data:image/svg+xml"] {
+  background: white;
 }

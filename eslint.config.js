@@ -20,13 +20,15 @@ export default [
         setTimeout: "readonly",
         HTMLElement: "readonly",
         btoa: "readonly",
+        structuredClone: "readonly",
+        ResizeObserver: "readonly",
         fetch: "readonly",
         URL: "readonly",
       },
     },
   },
   {
-    files: ["server.js"],
+    files: ["tests/**/*.js", "playwright.config.js"],
     languageOptions: {
       globals: {
         // Node globals
@@ -38,6 +40,13 @@ export default [
     },
   },
   {
-    ignores: ["dist/"],
+    ignores: [
+      "src/jupyter_watch/static/",
+      "dist/",
+      ".venv/",
+      ".test-runtime/",
+      "test-results/",
+      "playwright-report/",
+    ],
   },
 ];

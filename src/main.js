@@ -1,4 +1,9 @@
-import { renderCode, renderMIME, renderError, renderStream } from "./renderer.js";
+import { renderCode, copyButton, rendermime, WatchOutputArea } from "./renderer.js";
+import { OutputRouter } from "./output-router.js";
+import { Widget } from "@lumino/widgets";
+import "@lumino/widgets/style/widget.css";
+import "@jupyterlab/rendermime/style/base.css";
+import "@jupyterlab/outputarea/style/base.css";
 import "./style.css";
 import "katex/dist/katex.min.css";
 import "highlight.js/styles/github.css";
@@ -31,9 +36,6 @@ themeFab.addEventListener("click", () => {
   applyTheme(!document.body.classList.contains("dark"));
 });
 
-// Cell tracking: parent_msg_id -> cell DOM element
-const cells = new Map();
-
 // Auto-scroll: only if user hasn't scrolled up
 let autoScroll = true;
 const autoScrollToggle = document.getElementById("autoscroll-toggle");
@@ -60,208 +62,104 @@ function scrollToBottom() {
   window.scrollTo(0, document.body.scrollHeight);
 }
 
-// --- Cell creation ---
+// --- Cell views and upstream output models ---
 
-function findCell(parentMsgId) {
-  return cells.get(parentMsgId) || null;
+const notice = document.createElement("div");
+notice.id = "notice";
+notice.setAttribute("role", "status");
+notebook.before(notice);
+function showNotice(text) {
+  notice.textContent = text;
 }
 
-function createCell(code, parentMsgId) {
+function createCell(model) {
   const cell = document.createElement("div");
-  cell.classList.add("cell");
-
-  // Input area
+  cell.className = "standalone-output jp-ThemedContainer";
   const input = document.createElement("div");
-  input.classList.add("cell-input");
-
-  const gutter = document.createElement("div");
-  gutter.classList.add("gutter");
-
+  input.className = "cell-input";
+  input.hidden = true;
+  const gutter = document.createElement("button");
+  gutter.className = "gutter";
+  gutter.title = "Fold code";
+  gutter.setAttribute("aria-expanded", "true");
+  gutter.onclick = () => {
+    gutter.setAttribute("aria-expanded", String(!input.classList.toggle("collapsed")));
+  };
   const source = document.createElement("div");
-  source.classList.add("source");
-  source.appendChild(renderCode(code));
-
-  // Copy button
-  const copyBtn = document.createElement("button");
-  copyBtn.classList.add("copy-btn");
-  copyBtn.textContent = "Copy";
-  copyBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    navigator.clipboard.writeText(code).then(() => {
-      copyBtn.textContent = "Copied!";
-      setTimeout(() => {
-        copyBtn.textContent = "Copy";
-      }, 1500);
-    });
-  });
-
-  input.appendChild(gutter);
-  input.appendChild(source);
-  input.appendChild(copyBtn);
-
-  // Fold toggle on gutter only
-  gutter.addEventListener("click", () => {
-    input.classList.toggle("collapsed");
-  });
-
-  // Output area
+  source.className = "source";
+  let code = "";
+  input.append(
+    gutter,
+    source,
+    copyButton(() => code),
+  );
   const output = document.createElement("div");
-  output.classList.add("cell-output");
-
-  cell.appendChild(input);
-  cell.appendChild(output);
+  output.className = "cell-output";
+  cell.append(input, output);
   notebook.appendChild(cell);
-
-  // Track by parent_msg_id (the msg_id of the execute_request)
-  if (parentMsgId) {
-    cells.set(parentMsgId, cell);
-  }
-
-  return cell;
+  const area = new WatchOutputArea({ model, rendermime });
+  Widget.attach(area, output);
+  return {
+    setInput(text, count) {
+      code = text;
+      cell.className = "cell jp-ThemedContainer";
+      input.hidden = false;
+      gutter.title = `Fold input [${count ?? ""}]`;
+      source.replaceChildren(renderCode(code));
+    },
+    dispose() {
+      area.dispose();
+      cell.remove();
+    },
+  };
 }
-
-function getOutputArea(cell) {
-  return cell.querySelector(".cell-output");
+const router = new OutputRouter({
+  createCell,
+  onTruncate: () =>
+    showNotice("Earlier activity was omitted to keep the viewer within its history limit."),
+});
+let kernelAlive = false;
+let kernelBusy = false;
+function updateStatus() {
+  statusDot.className = `status ${!kernelAlive ? "disconnected" : kernelBusy ? "busy" : "connected"}`;
+  statusDot.title = !kernelAlive
+    ? "Kernel heartbeat unavailable"
+    : kernelBusy
+      ? "Kernel busy"
+      : "Kernel connected";
 }
-
-function createOutputBlock() {
-  const block = document.createElement("div");
-  block.classList.add("output-block");
-
-  const gutter = document.createElement("div");
-  gutter.classList.add("gutter", "foldable");
-  gutter.addEventListener("click", () => {
-    block.classList.toggle("collapsed");
-  });
-
-  const content = document.createElement("div");
-  content.classList.add("content");
-
-  const copyBtn = document.createElement("button");
-  copyBtn.classList.add("copy-btn");
-  copyBtn.textContent = "Copy";
-  copyBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    navigator.clipboard.writeText(content.textContent).then(() => {
-      copyBtn.textContent = "Copied!";
-      setTimeout(() => {
-        copyBtn.textContent = "Copy";
-      }, 1500);
-    });
-  });
-
-  block.appendChild(gutter);
-  block.appendChild(content);
-  block.appendChild(copyBtn);
-  return block;
-}
-
-function createStandaloneOutput() {
-  const wrapper = document.createElement("div");
-  wrapper.classList.add("standalone-output");
-  const output = document.createElement("div");
-  output.classList.add("cell-output");
-  wrapper.appendChild(output);
-  notebook.appendChild(wrapper);
-  return output;
-}
-
-// --- Message handling ---
-
 function handleMessage(msg) {
-  const { msg_type, content, parent_msg_id } = msg;
-
-  switch (msg_type) {
-    case "execute_input": {
-      createCell(content.code, parent_msg_id);
-      break;
-    }
-
-    case "execute_result":
-    case "display_data":
-    case "update_display_data": {
-      const cell = findCell(parent_msg_id);
-      const outputArea = cell ? getOutputArea(cell) : createStandaloneOutput();
-      const block = createOutputBlock();
-      const rendered = renderMIME(content.data);
-      if (rendered) {
-        block.querySelector(".content").appendChild(rendered);
-        outputArea.appendChild(block);
-      }
-      break;
-    }
-
-    case "stream": {
-      const cell = findCell(parent_msg_id);
-      const outputArea = cell ? getOutputArea(cell) : createStandaloneOutput();
-
-      // Try to append to existing stream element of same name in this cell
-      const streamName = content.name || "stdout";
-      let streamEl = outputArea.querySelector(
-        `.output-block:last-child .output-stream[data-stream="${streamName}"]`,
-      );
-
-      if (streamEl) {
-        streamEl.innerHTML += renderStream(content.text);
-      } else {
-        const block = createOutputBlock();
-        streamEl = document.createElement("div");
-        streamEl.className = `output-stream ${streamName}`;
-        streamEl.dataset.stream = streamName;
-        streamEl.innerHTML = renderStream(content.text);
-        block.querySelector(".content").appendChild(streamEl);
-        outputArea.appendChild(block);
-      }
-      break;
-    }
-
-    case "error": {
-      const cell = findCell(parent_msg_id);
-      const outputArea = cell ? getOutputArea(cell) : createStandaloneOutput();
-      const block = createOutputBlock();
-      block.classList.add("output-error");
-      block.querySelector(".content").appendChild(renderError(content.traceback));
-      outputArea.appendChild(block);
-      break;
-    }
-
-    case "status": {
-      const state = content.execution_state;
-      if (state === "busy") {
-        statusDot.className = "status busy";
-      } else if (state === "idle") {
-        statusDot.className = "status connected";
-      }
-      break;
-    }
-
-    case "_kernel_info": {
-      const uuid = content.kernel_id;
-      kernelInfoEl.textContent = uuid;
-      kernelInfoEl.title = "Click to copy kernel UUID";
-      kernelInfoEl.onclick = () => {
-        navigator.clipboard.writeText(uuid).then(() => {
-          kernelInfoEl.textContent = "copied!";
-          setTimeout(() => {
-            kernelInfoEl.textContent = uuid;
-          }, 1500);
-        });
-      };
-      break;
-    }
-
-    case "comm_open":
-    case "comm_msg":
-    case "comm_close":
-      break;
-
-    default:
-      // Unknown message type — ignore
-      break;
+  const type = msg.header?.msg_type || msg.msg_type;
+  const content = msg.content;
+  if (type === "_reset") {
+    router.reset();
+    kernelAlive = false;
+    kernelBusy = false;
+    showNotice("");
+    updateStatus();
+  } else if (type === "_notice") {
+    showNotice(content.text);
+  } else if (type === "_kernel_info") {
+    const filename = content.connection_file;
+    kernelInfoEl.textContent = filename;
+    kernelInfoEl.title = "Click to copy connection filename";
+    kernelInfoEl.onclick = () => navigator.clipboard.writeText(filename).catch(console.error);
+  } else if (type === "_kernel_status") {
+    kernelAlive = content.alive;
+    updateStatus();
+  } else if (type === "status") {
+    kernelBusy = content.execution_state === "busy";
+    updateStatus();
+  } else {
+    router.handle(msg);
   }
-
   if (autoScroll) scrollToBottom();
 }
+// Account for asynchronous Markdown, math, image, and Plotly layout changes.
+const resizeObserver = new ResizeObserver(() => {
+  if (autoScroll) scrollToBottom();
+});
+resizeObserver.observe(notebook);
 
 // --- WebSocket connection with auto-reconnect ---
 
@@ -271,11 +169,10 @@ const MAX_RECONNECT_DELAY = 30000;
 
 function connect() {
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-  const url = `${protocol}//${window.location.host}`;
+  const url = `${protocol}//${window.location.host}/ws`;
   ws = new WebSocket(url);
 
   ws.onopen = () => {
-    statusDot.className = "status connected";
     reconnectDelay = 1000;
   };
 
@@ -289,7 +186,9 @@ function connect() {
   };
 
   ws.onclose = () => {
-    statusDot.className = "status disconnected";
+    kernelAlive = false;
+    updateStatus();
+    statusDot.title = "Viewer disconnected; reconnecting";
     setTimeout(() => {
       reconnectDelay = Math.min(reconnectDelay * 2, MAX_RECONNECT_DELAY);
       connect();
@@ -300,5 +199,7 @@ function connect() {
     ws.close();
   };
 }
+
+window.addEventListener("offline", () => ws?.close());
 
 connect();

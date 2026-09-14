@@ -1,3 +1,11 @@
 node_modules/
 dist/
 .DS_Store
+.venv/
+__pycache__/
+.test-runtime/
+test-results/
+playwright-report/
+src/jupyter_watch/static/
+.ruff_cache/
+.pytest_cache/

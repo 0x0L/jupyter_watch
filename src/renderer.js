@@ -1,48 +1,22 @@
+import { RenderMimeRegistry, standardRendererFactories } from "@jupyterlab/rendermime";
+import { OutputArea } from "@jupyterlab/outputarea";
+import { Widget } from "@lumino/widgets";
 import hljs from "highlight.js/lib/core";
 import python from "highlight.js/lib/languages/python";
 import javascript from "highlight.js/lib/languages/javascript";
 import bash from "highlight.js/lib/languages/bash";
 import json from "highlight.js/lib/languages/json";
-import katex from "katex";
 import renderMathInElement from "katex/contrib/auto-render";
 import { marked } from "marked";
-import { AnsiUp } from "ansi_up";
 
-function addImageClickHandler(img) {
-  img.style.cursor = "pointer";
-  img.addEventListener("click", () => {
-    fetch(img.src)
-      .then((r) => r.blob())
-      .then((blob) => window.open(URL.createObjectURL(blob), "_blank"));
-  });
+for (const [name, grammar] of Object.entries({ python, javascript, bash, json })) {
+  hljs.registerLanguage(name, grammar);
 }
 
-hljs.registerLanguage("python", python);
-hljs.registerLanguage("javascript", javascript);
-hljs.registerLanguage("bash", bash);
-hljs.registerLanguage("json", json);
-
-const ansiUp = new AnsiUp();
-
-let plotlyReady = null;
-function loadPlotly() {
-  if (plotlyReady) return plotlyReady;
-  plotlyReady = new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = "https://cdn.plot.ly/plotly-2.35.2.min.js";
-    script.onload = resolve;
-    script.onerror = reject;
-    document.head.appendChild(script);
-  });
-  return plotlyReady;
-}
-
-/**
- * Syntax-highlight code and return a <pre><code> element.
- */
 export function renderCode(code, language = "python") {
   const pre = document.createElement("pre");
   const codeEl = document.createElement("code");
+  codeEl.className = "hljs";
   try {
     codeEl.innerHTML = hljs.highlight(code, { language }).value;
   } catch {
@@ -52,38 +26,83 @@ export function renderCode(code, language = "python") {
   return pre;
 }
 
-/**
- * Render MIME bundle following JupyterLab's priority order.
- * Returns a DOM element.
- */
-export function renderMIME(data) {
-  // Priority order
-  if (data["application/vnd.plotly.v1+json"]) {
-    const div = document.createElement("div");
-    const plotlyData = data["application/vnd.plotly.v1+json"];
-    loadPlotly().then(() => {
-      // eslint-disable-next-line no-undef
-      Plotly.newPlot(div, plotlyData.data, plotlyData.layout || {}, {
-        responsive: true,
-        ...(plotlyData.config || {}),
-      });
-    });
-    return div;
-  }
-
-  if (data["text/html"]) {
-    const div = document.createElement("div");
-    div.classList.add("rendered-html");
-    div.innerHTML = sanitizeHTML(data["text/html"]);
-    return div;
-  }
-
-  if (data["text/markdown"]) {
-    const div = document.createElement("div");
-    div.classList.add("rendered-html");
-    div.innerHTML = marked.parse(data["text/markdown"]);
+export function copyButton(getText) {
+  const button = document.createElement("button");
+  button.className = "copy-btn";
+  button.textContent = "Copy";
+  button.addEventListener("click", async (event) => {
+    event.stopPropagation();
     try {
-      renderMathInElement(div, {
+      await navigator.clipboard.writeText(getText());
+      button.textContent = "Copied!";
+    } catch {
+      button.textContent = "Copy failed";
+    }
+    setTimeout(() => {
+      button.textContent = "Copy";
+    }, 1500);
+  });
+  return button;
+}
+
+class JSONRenderer extends Widget {
+  async renderModel(model) {
+    const details = document.createElement("details");
+    const summary = document.createElement("summary");
+    summary.textContent = "JSON";
+    const pre = document.createElement("pre");
+    pre.textContent = JSON.stringify(model.data["application/json"], null, 2);
+    details.append(summary, pre);
+    this.node.replaceChildren(details);
+  }
+}
+
+class SVGRenderer extends Widget {
+  async renderModel(model) {
+    // Image context disables scripts and external resources, including for SVG.
+    // encodeURIComponent also handles Unicode SVG without btoa's Latin-1 limit.
+    const img = document.createElement("img");
+    img.src = `data:image/svg+xml,${encodeURIComponent(model.data["image/svg+xml"])}`;
+    this.node.replaceChildren(img);
+  }
+}
+
+class PlotlyRenderer extends Widget {
+  constructor() {
+    super();
+    this.queue = Promise.resolve();
+    this.node.classList.add("plotly-output");
+  }
+  renderModel(model) {
+    const data = structuredClone(model.data["application/vnd.plotly.v1+json"]);
+    // Serialize asynchronous renders so an older plot cannot overwrite an update.
+    this.queue = this.queue
+      .catch(() => {})
+      .then(async () => {
+        const { default: Plotly } = await import("plotly.js-dist-min");
+        if (this.isDisposed) return;
+        this.plotly = Plotly;
+        await Plotly.react(this.node, data.data, data.layout || {}, {
+          responsive: true,
+          ...(data.config || {}),
+        });
+        if (this.isDisposed) Plotly.purge(this.node);
+      });
+    return this.queue;
+  }
+  dispose() {
+    if (this.isDisposed) return;
+    this.plotly?.purge(this.node);
+    super.dispose();
+  }
+}
+
+export const rendermime = new RenderMimeRegistry({
+  initialFactories: standardRendererFactories,
+  markdownParser: { render: async (source) => marked.parse(source) },
+  latexTypesetter: {
+    typeset: (node) =>
+      renderMathInElement(node, {
         delimiters: [
           { left: "$$", right: "$$", display: true },
           { left: "$", right: "$", display: false },
@@ -91,89 +110,42 @@ export function renderMIME(data) {
           { left: "\\[", right: "\\]", display: true },
         ],
         throwOnError: false,
-      });
-    } catch {
-      // math rendering failed, that's ok
-    }
-    return div;
-  }
-
-  if (data["text/latex"]) {
-    const div = document.createElement("div");
-    try {
-      katex.render(data["text/latex"], div, { displayMode: true, throwOnError: false });
-    } catch {
-      div.textContent = data["text/latex"];
-    }
-    return div;
-  }
-
-  if (data["image/svg+xml"]) {
-    const img = document.createElement("img");
-    img.src = "data:image/svg+xml;base64," + btoa(data["image/svg+xml"]);
-    addImageClickHandler(img);
-    return img;
-  }
-
-  for (const mime of ["image/png", "image/jpeg", "image/gif"]) {
-    if (data[mime]) {
-      const img = document.createElement("img");
-      img.src = `data:${mime};base64,${data[mime]}`;
-      addImageClickHandler(img);
-      return img;
-    }
-  }
-
-  if (data["application/json"]) {
-    const container = document.createElement("div");
-    const toggle = document.createElement("div");
-    toggle.classList.add("json-toggle");
-    toggle.textContent = "JSON (click to expand)";
-    const content = document.createElement("pre");
-    content.classList.add("json-content");
-    content.textContent = JSON.stringify(data["application/json"], null, 2);
-    content.style.display = "none";
-    toggle.addEventListener("click", () => {
-      const visible = content.style.display !== "none";
-      content.style.display = visible ? "none" : "block";
-      toggle.textContent = visible ? "JSON (click to expand)" : "JSON (click to collapse)";
-    });
-    container.appendChild(toggle);
-    container.appendChild(content);
-    return container;
-  }
-
-  if (data["text/plain"]) {
-    const pre = document.createElement("pre");
-    pre.textContent = data["text/plain"];
-    return pre;
-  }
-
-  return null;
+        trust: false,
+      }),
+  },
+});
+for (const [mime, rank, Renderer] of [
+  ["application/vnd.plotly.v1+json", 40, PlotlyRenderer],
+  ["image/svg+xml", 80, SVGRenderer],
+  ["application/json", 100, JSONRenderer],
+]) {
+  rendermime.addFactory({
+    safe: true,
+    mimeTypes: [mime],
+    defaultRank: rank,
+    createRenderer: () => new Renderer(),
+  });
 }
 
-/**
- * Render error traceback with ANSI color support.
- */
-export function renderError(traceback) {
-  const pre = document.createElement("pre");
-  pre.classList.add("error-traceback");
-  const text = Array.isArray(traceback) ? traceback.join("\n") : String(traceback);
-  pre.innerHTML = ansiUp.ansi_to_html(text);
-  return pre;
-}
-
-/**
- * Render stream output (stdout/stderr) with ANSI support.
- * Returns an HTML string to append to existing stream content.
- */
-export function renderStream(text) {
-  return ansiUp.ansi_to_html(text);
-}
-
-/**
- * Strip <script> tags from HTML.
- */
-function sanitizeHTML(html) {
-  return html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "");
+/** Only watcher controls are custom; Jupyter owns output rendering and updates. */
+export class WatchOutputArea extends OutputArea {
+  createOutputItem(model) {
+    const panel = super.createOutputItem(model);
+    if (!panel) return panel;
+    const prompt = panel.widgets[0];
+    const toggle = document.createElement("button");
+    toggle.className = "output-fold";
+    toggle.textContent = "▾";
+    toggle.title = "Fold output";
+    toggle.setAttribute("aria-expanded", "true");
+    toggle.onclick = () => {
+      const collapsed = panel.node.classList.toggle("collapsed");
+      toggle.textContent = collapsed ? "▸" : "▾";
+      toggle.setAttribute("aria-expanded", String(!collapsed));
+    };
+    prompt.node.replaceChildren(toggle);
+    const copy = new Widget({ node: copyButton(() => panel.widgets[1].node.textContent) });
+    panel.addWidget(copy);
+    return panel;
+  }
 }

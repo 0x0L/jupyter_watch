@@ -1,2 +1,9 @@
 dist/
 node_modules/
+.venv/
+.test-runtime/
+test-results/
+playwright-report/
+src/jupyter_watch/static/
+.ruff_cache/
+.pytest_cache/
