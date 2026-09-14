@@ -1,14 +1,12 @@
 import asyncio
 import json
 import os
-import tempfile
 import unittest
 from pathlib import Path
 
 import pytest
-from tornado.httpclient import HTTPClientError, HTTPRequest
-from tornado.testing import AsyncHTTPTestCase, gen_test
-from tornado.websocket import websocket_connect
+from starlette.testclient import TestClient
+from starlette.websockets import WebSocketDisconnect
 
 from jupyter_watch.kernel import load_client
 from jupyter_watch.server import Hub, make_application, validate_origin
@@ -163,58 +161,55 @@ class SubscriberTests(unittest.IsolatedAsyncioTestCase):
         await subscriber.task
 
 
-class HTTPTests(AsyncHTTPTestCase):
-    def get_app(self):
-        self.directory = tempfile.TemporaryDirectory()
-        root = Path(self.directory.name)
-        (root / "index.html").write_text("viewer")
-        (root / "escape").symlink_to(Path(__file__).resolve())
-        self.hub = Hub("connection.json")
-        return make_application(self.hub, self.get_http_port(), "http://127.0.0.1:5173", root)
+@pytest.fixture
+def web_app(tmp_path):
+    (tmp_path / "index.html").write_text("viewer")
+    (tmp_path / "escape").symlink_to(Path(__file__).resolve())
+    return make_application(Hub("connection.json"), 8765, "http://127.0.0.1:5173", tmp_path)
 
-    def tearDown(self):
-        self.io_loop.run_sync(self.cleanup)
-        super().tearDown()
-        self.directory.cleanup()
 
-    async def cleanup(self):
-        await asyncio.gather(*self.hub.close())
+def test_static_and_host(web_app):
+    with TestClient(web_app, base_url="http://127.0.0.1:8765") as client:
+        response = client.get("/index.html")
+        assert response.content == b"viewer"
+        assert response.headers["x-content-type-options"] == "nosniff"
+        assert response.headers["referrer-policy"] == "no-referrer"
+        assert client.get("/index.html", headers={"Host": "evil.example"}).status_code == 403
+        assert client.get("/escape").status_code == 403
+        assert client.get("/%2e%2e/pyproject.toml").status_code == 403
+        assert client.get("/missing").status_code == 404
+        redirect = client.get("/", follow_redirects=False)
+        assert redirect.status_code == 302
+        assert redirect.headers["location"] == "http://127.0.0.1:5173"
 
-    def test_static_and_host(self):
-        assert self.fetch("/index.html").body == b"viewer"
-        assert self.fetch("/index.html", headers={"Host": "evil.example"}).code == 403
-        assert self.fetch("/escape").code == 403
-        assert self.fetch("/%2e%2e/pyproject.toml").code == 403
-        assert self.fetch("/missing").code == 404
 
-    @gen_test
-    async def test_origins_and_reset(self):
-        url = self.get_url("/ws").replace("http:", "ws:")
+def test_origins_and_reset(web_app):
+    with TestClient(web_app, base_url="http://127.0.0.1:8765") as client:
         for headers in (
             {},
             {"Origin": "http://evil.example"},
-            {
-                "Origin": "http://127.0.0.1:5173",
-                "Host": "evil.example",
-            },
+            {"Origin": "http://127.0.0.1:5173", "Host": "evil.example"},
+            {"Origin": "http://127.0.0.1:5173", "Host": "localhost:1234"},
         ):
-            with pytest.raises(HTTPClientError) as error:
-                await websocket_connect(HTTPRequest(url, headers=headers))
-            assert error.value.code == 403
-        for origin in (self.get_url("").rstrip("/"), "http://127.0.0.1:5173"):
-            socket = await websocket_connect(HTTPRequest(url, headers={"Origin": origin}))
-            assert json.loads(await socket.read_message())["msg_type"] == "_reset"
-            assert json.loads(await socket.read_message())["content"] == {
-                "connection_file": "connection.json",
-            }
-            socket.close()
+            with pytest.raises(WebSocketDisconnect):
+                with client.websocket_connect("ws://127.0.0.1:8765/ws", headers=headers):
+                    pass
+        for origin in ("http://127.0.0.1:8765", "http://127.0.0.1:5173"):
+            with client.websocket_connect(
+                "ws://127.0.0.1:8765/ws", headers={"Origin": origin}
+            ) as socket:
+                assert socket.receive_json()["msg_type"] == "_reset"
+                assert socket.receive_json()["content"] == {"connection_file": "connection.json"}
+                assert socket.receive_json()["msg_type"] == "_kernel_status"
+                socket.send_text("ignored command")
+        assert not web_app.state.hub.subscribers
 
 
 def test_cli_rejects_configuration_before_start(connection, monkeypatch, capsys):
     from jupyter_watch import cli
 
     called = []
-    monkeypatch.setattr(cli.asyncio, "run", lambda task: called.append(task))
+    monkeypatch.setattr(cli, "run_server", lambda *args: called.append(args))
     for arguments in (["missing.json"], [str(connection), "--port", "0"]):
         monkeypatch.setattr("sys.argv", ["jupyter-watch", *arguments])
         assert cli.main() == 1
@@ -230,10 +225,10 @@ def test_cli_requires_assets_except_in_development(connection, monkeypatch):
     assert cli.main() == 1
     calls = []
 
-    async def serve(*args):
+    def serve(*args):
         calls.append(args)
 
-    monkeypatch.setattr(cli, "serve", serve)
+    monkeypatch.setattr(cli, "run_server", serve)
     monkeypatch.setattr(
         "sys.argv", ["jupyter-watch", str(connection), "--dev-origin", "http://127.0.0.1:5173"]
     )

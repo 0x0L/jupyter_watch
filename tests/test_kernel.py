@@ -12,8 +12,8 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from jupyter_client import AsyncKernelManager
-from tornado.httpclient import HTTPRequest
-from tornado.websocket import websocket_connect
+from server_helpers import wait_ready
+from websockets.asyncio.client import connect
 
 
 class LiveKernelTests(unittest.IsolatedAsyncioTestCase):
@@ -42,19 +42,14 @@ class LiveKernelTests(unittest.IsolatedAsyncioTestCase):
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE,
                 )
-                line = await asyncio.wait_for(process.stdout.readline(), 10)
-                assert b"Serving" in line
-                ws = await websocket_connect(
-                    HTTPRequest(
-                        f"ws://127.0.0.1:{port}/ws",
-                        headers={"Origin": f"http://127.0.0.1:{port}"},
-                    )
-                )
+                origin = f"http://127.0.0.1:{port}"
+                await wait_ready(process, origin)
+                ws = await connect(f"ws://127.0.0.1:{port}/ws", origin=origin, proxy=None)
 
                 async def read_until(predicate):
                     async with asyncio.timeout(15):
                         while True:
-                            message = await ws.read_message()
+                            message = await ws.recv()
                             assert message is not None
                             message = json.loads(message)
                             if predicate(message):
@@ -104,7 +99,7 @@ class LiveKernelTests(unittest.IsolatedAsyncioTestCase):
                 assert reply["content"]["status"] == "ok"
             finally:
                 if ws:
-                    ws.close()
+                    await ws.close()
                 if process and process.returncode is None:
                     process.kill()
                     await process.wait()

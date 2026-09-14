@@ -4,9 +4,9 @@ jupyter-watch is a passive viewer for existing Jupyter kernels. Prefer upstream 
 
 ## Architecture
 
-- `src/jupyter_watch/cli.py`: explicit connection-file CLI and asyncio lifecycle.
+- `src/jupyter_watch/cli.py`: explicit connection-file CLI, Uvicorn lifecycle, and Python autoreload.
 - `src/jupyter_watch/kernel.py`: `AsyncKernelClient`, IOPub + heartbeat only. Never owns the kernel lifecycle. Full envelopes and base64 buffers.
-- `src/jupyter_watch/server.py`, `subscriber.py`: loopback Tornado HTTP/WebSocket service, Host/Origin checks, bounded live subscriber queues. No output history or replay.
+- `src/jupyter_watch/server.py`, `subscriber.py`: loopback Starlette/Uvicorn HTTP/WebSocket service, Host/Origin checks, bounded live subscriber queues. No output history or replay.
 - `src/output-router.js`: parent request / display ID routing into JupyterLab models with bounded retention.
 - `src/renderer.js`: JupyterLab rendering plus Plotly, JSON, SVG images, math/Markdown, and folding/copy controls. Models remain untrusted.
 - `src/main.js`, `src/style.css`: presentation and interaction.
@@ -22,7 +22,7 @@ Chromium tests need `npx playwright install chromium`. Fixtures launch through u
 
 ## Development
 
-Run `uv run jupyter-watch /path/to/connection.json --dev-origin http://127.0.0.1:5173` alongside `npm run dev`. No kernel discovery or runtime npm installation.
+Run `uv run jupyter-watch /path/to/connection.json --reload --dev-origin http://127.0.0.1:5173` alongside `npm run dev`. No kernel discovery or runtime npm installation.
 
 ## Style
 

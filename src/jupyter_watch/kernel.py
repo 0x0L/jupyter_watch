@@ -8,9 +8,10 @@ from queue import Empty
 
 from jupyter_client import AsyncKernelClient
 from jupyter_client.jsonutil import json_default
+from jupyter_client.session import Session
 
 
-def load_client(argument):
+def validate_connection(argument):
     path = Path(argument).expanduser().resolve()
     if not path.is_file():
         raise ValueError(f"Connection file does not exist: {path}")
@@ -31,6 +32,12 @@ def load_client(argument):
         raise ValueError("Connection key must be a string")
     if not isinstance(info.get("signature_scheme"), str):
         raise ValueError("Connection signature_scheme must be a string")
+    Session(signature_scheme=info["signature_scheme"])
+    return path, info
+
+
+def load_client(argument):
+    path, info = validate_connection(argument)
     client = AsyncKernelClient(connection_file=str(path))
     # Jupyter validates the signature algorithm and applies its connection settings.
     client.load_connection_info(info)

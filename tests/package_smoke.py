@@ -12,9 +12,10 @@ import tempfile
 import zipfile
 from pathlib import Path
 
+import httpx
 from jupyter_client import AsyncKernelManager
-from tornado.httpclient import AsyncHTTPClient, HTTPRequest
-from tornado.websocket import websocket_connect
+from server_helpers import wait_ready
+from websockets.asyncio.client import connect
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -92,30 +93,26 @@ async def smoke():
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
-            assert b"Serving" in await asyncio.wait_for(process.stdout.readline(), 10)
             origin = f"http://127.0.0.1:{port}"
-            http = AsyncHTTPClient()
-            page = await http.fetch(origin)
-            assert page.body == wheel_assets["index.html"]
-            assets = re.findall(r'(?:src|href)="(/assets/[^\"]+)"', page.body.decode())
+            await wait_ready(process, origin)
+            http = httpx.AsyncClient(trust_env=False)
+            page = await http.get(origin)
+            assert page.content == wheel_assets["index.html"]
+            assets = re.findall(r'(?:src|href)="(/assets/[^\"]+)"', page.content.decode())
             assert assets
             for asset in assets:
-                assert (await http.fetch(origin + asset)).body == wheel_assets[asset.lstrip("/")]
-            ws = await websocket_connect(
-                HTTPRequest(
-                    f"ws://127.0.0.1:{port}/ws",
-                    headers={"Origin": origin},
-                )
-            )
-            assert json.loads(await ws.read_message())["msg_type"] == "_reset"
+                assert (await http.get(origin + asset)).content == wheel_assets[asset.lstrip("/")]
+            await http.aclose()
+            ws = await connect(f"ws://127.0.0.1:{port}/ws", origin=origin, proxy=None)
+            assert json.loads(await ws.recv())["msg_type"] == "_reset"
             async with asyncio.timeout(15):
                 while True:
-                    message = json.loads(await ws.read_message())
+                    message = json.loads(await ws.recv())
                     if message.get("msg_type") == "_kernel_status" and message["content"]["alive"]:
                         break
                 client.execute("print('installed-wheel-marker')")
                 while True:
-                    message = json.loads(await ws.read_message())
+                    message = json.loads(await ws.recv())
                     if "installed-wheel-marker" in message.get("content", {}).get("text", ""):
                         break
             process.terminate()
@@ -124,7 +121,7 @@ async def smoke():
             assert await manager.is_alive()
         finally:
             if ws:
-                ws.close()
+                await ws.close()
             if process and process.returncode is None:
                 process.kill()
                 await process.wait()

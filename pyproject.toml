@@ -9,7 +9,11 @@ description = "A passive, local web viewer for Jupyter kernel output"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
-dependencies = ["jupyter-client>=8.6,<9", "tornado>=6.4,<7"]
+dependencies = [
+    "jupyter-client>=8.6,<9",
+    "starlette>=1.6.0,<2",
+    "uvicorn[standard]>=0.53.0,<0.54",
+]
 
 [project.scripts]
 jupyter-watch = "jupyter_watch.cli:main"
@@ -23,6 +27,7 @@ dev = [
     "numpy>=2.4.6",
     "pandas>=3.0.5",
     "jupyter-console>=6.6.3",
+    "httpx>=0.28.1",
 ]
 
 [tool.hatch.build.targets.wheel]

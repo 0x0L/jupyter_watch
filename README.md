@@ -1,6 +1,6 @@
 # jupyter-watch
 
-A local web viewer for live Jupyter kernel activity. Attach using an explicit connection file. The watcher uses **JupyterLab's output models and MIME renderers** in the browser and **`jupyter_client` with Tornado** in one Python backend.
+A local web viewer for live Jupyter kernel activity. Attach using an explicit connection file. The watcher uses **JupyterLab's output models and MIME renderers** in the browser and **`jupyter_client` with Starlette and Uvicorn** in one Python backend.
 
 It supports code highlighting, HTML/Markdown, math, images, JSON, Plotly, streams, tracebacks, display updates, output clearing, folding, copying, themes, and automatic scrolling.
 
@@ -51,12 +51,14 @@ uv run jupyter-watch /path/to/connection.json
 
 Vite writes assets into the ignored `src/jupyter_watch/static/` directory. `uv build` creates a wheel and source distribution in `dist/`, both containing those assets. Release builds fail if assets are absent. Editable installation works before the frontend is built. Python startup never installs dependencies or runs npm.
 
-For hot reload, run in separate terminals:
+For Python autoreload and frontend hot reload, run in separate terminals:
 
 ```sh
-uv run jupyter-watch /path/to/connection.json --dev-origin http://127.0.0.1:5173
+uv run jupyter-watch /path/to/connection.json --reload --dev-origin http://127.0.0.1:5173
 npm run dev
 ```
+
+`--reload` watches Python source in the `jupyter_watch` package and restarts the backend. It can also be used without `--dev-origin` when frontend assets have been built. Each restart reconnects to the existing kernel without stopping it; viewers reconnect with an empty display and only receive new output. Frontend assets and connection JSON files do not trigger backend reloads.
 
 Open <http://127.0.0.1:5173>. Vite serves the page and proxies `/ws`. Compiled frontend assets are not required in this mode. If you change the backend port, update Vite's proxy target in `vite.config.js`.
 
@@ -81,7 +83,7 @@ Python tests exercise validation, live-only delivery, slow readers, security, fu
 
 - `src/jupyter_watch/cli.py`: argparse setup and application lifecycle on one asyncio loop.
 - `src/jupyter_watch/kernel.py`: passive `AsyncKernelClient`, with IOPub observation and independently polled heartbeat. Jupyter handles signatures and decoding. Complete envelopes and metadata are preserved, with binary buffers encoded as base64.
-- `src/jupyter_watch/server.py` and `subscriber.py`: Tornado static/WebSocket handling, and ordered per-subscriber send queues. Stopping the watcher leaves the kernel running.
+- `src/jupyter_watch/server.py` and `subscriber.py`: Starlette static/WebSocket handling, and ordered per-subscriber send queues. Stopping the watcher leaves the kernel running.
 - `src/output-router.js`: routes executions into JupyterLab `OutputAreaModel`, including orphan outputs and display IDs shared across cells. Jupyter handles stream merging, carriage returns, backspaces, and deferred clearing.
 - `src/renderer.js`: JupyterLab renderers with adapters for math/Markdown, JSON, SVG images, Plotly, and folding/copy controls. Plotly loads from a bundled chunk, with no CDN dependency.
 - `src/main.js`: cell views, connection state, themes, and scrolling.

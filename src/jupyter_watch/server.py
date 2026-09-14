@@ -1,12 +1,17 @@
-"""Loopback HTTP/WebSocket delivery without output history."""
+"""Loopback ASGI HTTP/WebSocket delivery without output history."""
 
+import asyncio
+from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from tornado.web import Application, HTTPError, RequestHandler, StaticFileHandler
-from tornado.websocket import WebSocketHandler
+from starlette.applications import Starlette
+from starlette.exceptions import HTTPException
+from starlette.responses import PlainTextResponse, RedirectResponse
+from starlette.routing import Mount, Route, WebSocketRoute
+from starlette.staticfiles import StaticFiles
 
-from .kernel import encode
+from .kernel import KernelObserver, encode, load_client
 from .subscriber import MAX_BYTES, Subscriber
 
 STATIC = Path(__file__).parent / "static"
@@ -59,62 +64,36 @@ class Hub:
 
 
 class LocalOnly:
-    def prepare(self):
-        if self.request.host.lower() not in self.settings["allowed_hosts"]:
-            raise HTTPError(403)
-        return super().prepare()
+    def __init__(self, app, allowed_hosts, dev_origin):
+        self.app = app
+        self.allowed_hosts = allowed_hosts
+        self.dev_origin = dev_origin
 
-    def set_default_headers(self):
-        self.set_header("X-Content-Type-Options", "nosniff")
-        self.set_header("Referrer-Policy", "no-referrer")
+    async def __call__(self, scope, receive, send):
+        if scope["type"] not in ("http", "websocket"):
+            return await self.app(scope, receive, send)
+        headers = dict(scope["headers"])
+        host = headers.get(b"host", b"").decode("latin-1").lower()
+        origin = headers.get(b"origin", b"").decode("latin-1")
 
+        async def secure_send(message):
+            if message["type"] == "http.response.start":
+                message["headers"] = list(message.get("headers", [])) + [
+                    (b"x-content-type-options", b"nosniff"),
+                    (b"referrer-policy", b"no-referrer"),
+                ]
+            await send(message)
 
-class Assets(LocalOnly, StaticFileHandler):
-    def validate_absolute_path(self, root, absolute_path):
-        # Also contain symlinks, in addition to Tornado's traversal protection.
-        if not Path(absolute_path).resolve().is_relative_to(Path(root).resolve()):
-            raise HTTPError(403)
-        return super().validate_absolute_path(root, absolute_path)
-
-
-class ViewerSocket(LocalOnly, WebSocketHandler):
-    subscriber = None
-
-    def prepare(self):
-        super().prepare()
-        # Tornado normally allows absent Origin headers; viewers must supply one.
-        origin = self.request.headers.get("Origin")
-        if not origin or not self.check_origin(origin):
-            raise HTTPError(403)
-
-    def check_origin(self, origin):
-        return (
-            origin == f"http://{self.request.host.lower()}" or origin == self.settings["dev_origin"]
-        )
-
-    def open(self):
-        def close():
-            self.settings["hub"].subscribers.discard(self.subscriber)
-            self.close(1008, "Viewer cannot keep up")
-            # Abort buffered writes immediately instead of retaining a slow connection.
-            if self.ws_connection:
-                self.ws_connection.stream.close()
-
-        self.subscriber = Subscriber(self.write_message, close)
-        self.settings["hub"].subscribe(self.subscriber)
-
-    def on_message(self, message):
-        pass  # This is a read-only viewer, with no commands to forward.
-
-    def on_close(self):
-        if self.subscriber:
-            self.settings["hub"].subscribers.discard(self.subscriber)
-            self.subscriber.stop()
-
-
-class DevPage(LocalOnly, RequestHandler):
-    def get(self):
-        self.redirect(self.settings["dev_origin"])
+        forbidden = host not in self.allowed_hosts
+        if scope["type"] == "websocket":
+            forbidden |= not origin or origin not in (f"http://{host}", self.dev_origin)
+        if forbidden:
+            if scope["type"] == "websocket":
+                await send({"type": "websocket.close", "code": 1008})
+            else:
+                await PlainTextResponse("Forbidden", status_code=403)(scope, receive, secure_send)
+            return
+        await self.app(scope, receive, secure_send)
 
 
 def validate_origin(origin):
@@ -133,16 +112,99 @@ def validate_origin(origin):
     return origin
 
 
-def make_application(hub, port, dev_origin=None, static=STATIC):
-    routes = [(r"/ws", ViewerSocket)]
+class Assets(StaticFiles):
+    async def check_config(self):
+        # Vite development can run before the first frontend build.
+        if Path(self.directory).exists():
+            await super().check_config()
+
+    def lookup_path(self, path):
+        root = Path(self.directory).resolve()
+        if not (root / path).resolve().is_relative_to(root):
+            raise HTTPException(403)
+        return super().lookup_path(path)
+
+
+async def viewer_socket(websocket):
+    hub = websocket.app.state.hub
+    await websocket.accept()
+    stopped = asyncio.Event()
+    subscriber = Subscriber(websocket.send_text, stopped.set)
+    hub.subscribe(subscriber)
+
+    async def read():
+        while True:
+            message = await websocket.receive()  # Ignore text and binary viewer commands.
+            if message["type"] == "websocket.disconnect":
+                return
+
+    reader = asyncio.create_task(read())
+    closer = asyncio.create_task(stopped.wait())
+    try:
+        await asyncio.wait((reader, closer), return_when=asyncio.FIRST_COMPLETED)
+    finally:
+        hub.subscribers.discard(subscriber)
+        subscriber.stop()
+        reader.cancel()
+        closer.cancel()
+        await asyncio.gather(reader, closer, subscriber.task, return_exceptions=True)
+        with suppress(Exception):
+            await asyncio.wait_for(websocket.close(1008, "Viewer cannot keep up"), 1)
+
+
+async def dev_page(request):
+    return RedirectResponse(request.app.state.dev_origin, status_code=302)
+
+
+def make_application(hub, port, dev_origin=None, static=STATIC, lifespan=None):
+    routes = [WebSocketRoute("/ws", viewer_socket)]
     if dev_origin:
-        routes.append((r"/", DevPage))
-    routes.append((r"/(.*)", Assets, {"path": str(static), "default_filename": "index.html"}))
-    return Application(
-        routes,
-        hub=hub,
-        dev_origin=dev_origin,
+        routes.append(Route("/", dev_page))
+    routes.append(Mount("/", Assets(directory=static, html=True, check_dir=not dev_origin)))
+    app = Starlette(routes=routes, lifespan=lifespan)
+    app.state.hub = hub
+    app.state.dev_origin = dev_origin
+    app.add_middleware(
+        LocalOnly,
         allowed_hosts={f"localhost:{port}", f"127.0.0.1:{port}"},
-        websocket_max_message_size=1024,
-        websocket_ping_interval=20,
+        dev_origin=dev_origin,
     )
+    return app
+
+
+def kernel_lifespan(connection_file):
+    @asynccontextmanager
+    async def lifespan(app):
+        path, client = load_client(connection_file)
+        hub = app.state.hub = Hub(path.name)
+        observer = KernelObserver(client, hub.publish)
+        failure = []
+        tasks = []
+        stopping = False
+
+        def completed(task):
+            if not stopping:
+                error = (
+                    RuntimeError("Kernel observer stopped unexpectedly")
+                    if task.cancelled()
+                    else task.exception() or RuntimeError("Kernel observer stopped unexpectedly")
+                )
+                failure.append(error)
+
+        try:
+            observer.start()
+            tasks = [
+                asyncio.create_task(observer.output()),
+                asyncio.create_task(observer.heartbeat()),
+            ]
+            for task in tasks:
+                task.add_done_callback(completed)
+            yield {"observer_failure": failure}
+        finally:
+            stopping = True
+            for task in tasks:
+                task.cancel()
+            await asyncio.gather(*tasks, *hub.close(), return_exceptions=True)
+            observer.stop()
+
+    return lifespan
