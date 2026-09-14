@@ -1,12 +1,11 @@
-/* JupyterLab supplies theme tokens and rich-output styles. This small shell
-   follows Qt Console's continuous transcript and In / Out prompt layout. */
+/* Align the transcript with JupyterLab prompts and theme tokens. */
 body {
   --console-mono: Menlo, Monaco, Consolas, "Liberation Mono", monospace;
   --jp-code-font-family: var(--console-mono);
   --jp-code-font-size: 13px;
   --jp-code-line-height: 1.5;
   --jp-code-padding: 0px;
-  --jp-cell-prompt-width: 12ch;
+  --jp-cell-prompt-width: 94px;
   --jp-cell-prompt-font-family: var(--console-mono);
   --jp-cell-prompt-letter-spacing: 0;
   --jp-cell-prompt-opacity: 1;
@@ -14,7 +13,7 @@ body {
   --console-out: #8b0000;
   --jp-cell-outprompt-font-color: var(--console-out);
   margin: 0;
-  padding: 60px 0 32px;
+  padding: 0 0 32px;
   color: var(--jp-content-font-color1);
   background: var(--jp-layout-color0);
   font-family: var(--jp-ui-font-family);
@@ -31,7 +30,8 @@ body.dark {
   box-sizing: border-box;
 }
 button,
-input {
+input,
+select {
   font: inherit;
 }
 button {
@@ -39,14 +39,15 @@ button {
   cursor: pointer;
 }
 button:focus-visible,
-input:focus-visible {
+input:focus-visible,
+select:focus-visible {
   outline: 2px solid var(--jp-brand-color1);
   outline-offset: 2px;
 }
 
 #header {
-  position: fixed;
-  inset: 0 0 auto;
+  position: sticky;
+  top: 0;
   min-height: 46px;
   display: flex;
   align-items: center;
@@ -85,7 +86,7 @@ input:focus-visible {
   gap: 6px;
   margin-left: auto;
 }
-#autoscroll-fab {
+#follow-control {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -95,14 +96,14 @@ input:focus-visible {
   white-space: nowrap;
   cursor: pointer;
 }
-#autoscroll-toggle {
+#follow-output {
   margin: 0;
   accent-color: var(--jp-brand-color1);
 }
-#autoscroll-fab.off {
+#follow-control.off {
   color: var(--jp-ui-font-color2);
 }
-#theme-fab,
+#theme-toggle,
 #clear-output {
   display: flex;
   align-items: center;
@@ -114,8 +115,8 @@ input:focus-visible {
   border-radius: 5px;
   white-space: nowrap;
 }
-#autoscroll-fab:hover,
-#theme-fab:hover,
+#follow-control:hover,
+#theme-toggle:hover,
 #clear-output:hover,
 #kernel-info:hover {
   background: var(--jp-layout-color2);
@@ -150,10 +151,11 @@ input:focus-visible {
 
 #notebook {
   margin: 0;
-  padding: 8px 20px;
+  padding: 22px 20px 8px;
+  overflow-anchor: none;
 }
 .cell,
-.standalone-output {
+.output-only {
   position: relative;
   margin: 0 0 20px;
 }
@@ -234,6 +236,7 @@ input:focus-visible {
 .jp-OutputArea-child {
   position: relative;
   flex-direction: row;
+  padding-right: 88px;
 }
 .jp-OutputArea .jp-OutputArea-output {
   min-width: 0;
@@ -295,11 +298,6 @@ body.dark .jp-OutputArea img[src^="data:image/svg+xml"] {
   font: 11px / 18px var(--jp-ui-font-family);
   opacity: 0;
 }
-.cell-input > .copy-btn {
-  position: absolute;
-  top: 0;
-  right: 0;
-}
 .output-controls {
   display: contents;
 }
@@ -321,9 +319,7 @@ body.dark .jp-OutputArea img[src^="data:image/svg+xml"] {
   font-size: 16px;
   border-radius: 4px;
 }
-.cell-input:hover > .copy-btn,
 .jp-OutputArea-child:hover .copy-btn,
-.jp-OutputArea-child:hover .output-fold,
 .copy-btn:focus-visible,
 .output-fold:focus-visible,
 .collapsed .output-fold {
@@ -335,7 +331,7 @@ body.dark .jp-OutputArea img[src^="data:image/svg+xml"] {
   background: var(--jp-layout-color2);
 }
 
-/* Keep the existing lightweight highlighter, using Jupyter's syntax palette. */
+/* Match input highlighting to the JupyterLab syntax palette. */
 .hljs {
   color: var(--jp-mirror-editor-variable-color);
 }
@@ -365,20 +361,19 @@ body.dark .jp-OutputArea img[src^="data:image/svg+xml"] {
   color: var(--jp-mirror-editor-def-color);
 }
 
-#notebook:empty::before {
-  content: "No output yet";
-  display: block;
-  margin: 28px 0 8px var(--jp-cell-prompt-width);
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--jp-ui-font-color1);
-}
-#notebook:empty::after {
-  content: "New kernel activity will appear here.";
-  display: block;
-  margin-left: var(--jp-cell-prompt-width);
+#empty-state {
+  margin: 20px 20px 8px;
+  padding-left: var(--jp-cell-prompt-width);
   color: var(--jp-ui-font-color2);
   font-size: 12px;
+}
+#empty-state p:first-child {
+  color: var(--jp-ui-font-color1);
+  font-size: 14px;
+  font-weight: 500;
+}
+#notebook:not(:empty) + #empty-state {
+  display: none;
 }
 #notice {
   margin: 0 20px 8px;
@@ -407,25 +402,25 @@ body.dark .jp-OutputArea img[src^="data:image/svg+xml"] {
     max-width: calc(100vw - 140px);
     text-align: left;
   }
-  body {
-    padding-top: 86px;
-  }
   #notebook {
-    padding: 8px 12px;
+    padding: 22px 12px 8px;
+  }
+  #empty-state {
+    margin-inline: 12px;
   }
   .toolbar-controls {
     gap: 3px;
   }
-  #theme-fab,
+  #theme-toggle,
   #clear-output,
-  #autoscroll-fab {
+  #follow-control {
     padding-left: 6px;
     padding-right: 6px;
   }
 }
 @media (prefers-reduced-motion: no-preference) {
   button,
-  #autoscroll-fab {
+  #follow-control {
     transition:
       background-color 120ms ease,
       border-color 120ms ease;
@@ -440,29 +435,30 @@ body.dark .jp-OutputArea img[src^="data:image/svg+xml"] {
   display: none;
 }
 .outputs-placeholder {
-  margin-left: calc(var(--jp-cell-prompt-width) * 1);
+  margin-left: var(--jp-cell-prompt-width);
   font: 12px / 1.5 var(--jp-ui-font-family);
   height: 24px;
   padding: 2px 10px;
 }
 .cell-actions {
-  position: absolute;
-  top: 0;
-  right: 0;
+  flex-shrink: 0;
+  margin-left: auto;
   display: flex;
   gap: 4px;
   z-index: 1;
 }
-.orphan-actions {
+.output-only-actions {
+  position: absolute;
   top: 0;
+  right: 0;
 }
-.standalone-output {
+.output-only {
   padding-top: 20px;
 }
 .cell-input:hover .cell-actions .copy-btn,
 .cell-input:focus-within .cell-actions .copy-btn,
-.standalone-output:hover > .cell-actions .copy-btn,
-.standalone-output:focus-within > .cell-actions .copy-btn {
+.output-only:hover > .cell-actions .copy-btn,
+.output-only:focus-within > .cell-actions .copy-btn {
   opacity: 1;
 }
 body.wrap-input .source pre {
@@ -471,9 +467,6 @@ body.wrap-input .source pre {
 }
 body.wrap-input .continuation-prompts {
   display: none;
-}
-#notebook {
-  overflow-anchor: none;
 }
 #view-settings {
   position: relative;
@@ -494,7 +487,12 @@ body.wrap-input .continuation-prompts {
   display: none;
 }
 #view-settings summary::after {
-  content: "⌄";
+  content: "";
+  flex: none;
+  width: 0.65em;
+  height: 0.4em;
+  background: currentColor;
+  clip-path: polygon(0 0, 50% 65%, 100% 0, 100% 35%, 50% 100%, 0 35%);
 }
 #view-settings[open] summary,
 #view-settings summary:hover {
@@ -549,10 +547,10 @@ body.wrap-input .continuation-prompts {
   .cell-input .cell-actions {
     flex-basis: 100%;
   }
-  .orphan-actions {
+  .output-only-actions {
     margin-bottom: 4px;
   }
-  .standalone-output {
+  .output-only {
     padding-top: 0;
   }
 }
@@ -567,11 +565,8 @@ body.wrap-input .continuation-prompts {
     flex-basis: auto;
     margin-left: auto;
   }
-  #status-label {
-    display: none;
-  }
   #kernel-info {
-    max-width: 40vw;
+    max-width: 24vw;
   }
   .view-panel {
     right: -50px;
@@ -586,6 +581,23 @@ body.wrap-input .continuation-prompts {
     flex-wrap: wrap;
   }
   .cell-input > .cell-actions .copy-btn {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 480px), (hover: none) {
+  .jp-OutputArea-child {
+    display: grid;
+    grid-template-columns: var(--jp-cell-prompt-width) minmax(0, 1fr);
+    padding-right: 0;
+  }
+  .output-controls {
+    display: flex;
+    grid-column: 2;
+    justify-content: flex-end;
+  }
+  .output-controls .copy-btn {
+    position: static;
     opacity: 1;
   }
 }

@@ -76,8 +76,8 @@ display({'application/vnd.plotly.v1+json': {'data': [{'x': [1,2,3], 'y': [2,1,4]
   await section.locator(".fold-placeholder").click();
   await expect(output.locator(".jp-OutputArea-output")).toBeVisible();
   await output.hover();
-  await output.getByRole("button", { name: "Copy", exact: true }).click();
-  await expect(output.getByRole("button", { name: "Copied!" })).toBeVisible();
+  await output.getByRole("button", { name: "Copy output", exact: true }).click();
+  await expect(output.getByRole("button", { name: "Copied" })).toBeVisible();
   await page.screenshot({
     path: ".test-runtime/light.png",
     fullPage: true,

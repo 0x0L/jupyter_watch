@@ -8,7 +8,7 @@
   <body>
     <header id="header">
       <span class="title">Jupyter Watch</span>
-      <span class="viewer-label">Console</span>
+      <span class="viewer-label">Live viewer</span>
       <div class="connection-info">
         <span
           id="status"
@@ -16,13 +16,13 @@
           role="img"
           aria-label="Kernel disconnected"
         ></span>
-        <span id="status-label">Connecting</span>
-        <button id="kernel-info" title="Waiting for connection filename"></button>
+        <span id="status-label" role="status">Connecting</span>
+        <button id="kernel-info" title="Waiting for connection filename" disabled></button>
       </div>
       <div class="toolbar-controls">
-        <button id="clear-output" title="Clear visible output">Clear</button>
-        <label id="autoscroll-fab" title="Follow new output">
-          <input type="checkbox" id="autoscroll-toggle" checked />
+        <button id="clear-output" title="Clear all visible cells">Clear</button>
+        <label id="follow-control" title="Follow new output">
+          <input type="checkbox" id="follow-output" checked />
           Follow output
         </label>
         <details id="view-settings">
@@ -41,14 +41,18 @@
             </select>
           </div>
         </details>
-        <button id="theme-fab" title="Toggle dark mode" aria-label="Toggle dark mode">
+        <button id="theme-toggle" title="Toggle dark mode" aria-label="Toggle dark mode">
           <span id="theme-icon-sun" aria-hidden="true">☀︎</span>
           <span id="theme-icon-moon" aria-hidden="true" style="display: none">☾</span>
           Theme
         </button>
       </div>
     </header>
-    <main id="notebook" aria-label="Kernel console output"></main>
+    <main id="notebook" aria-label="Kernel activity"></main>
+    <div id="empty-state">
+      <p>No activity yet</p>
+      <p>Run code in your notebook or console to see new activity here.</p>
+    </div>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

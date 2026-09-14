@@ -62,7 +62,7 @@ describe("cell sections", () => {
     const { model, node } = fixture();
     model.add(display({ "text/plain": "orphan" }));
     expect(node.querySelector(".cell-input").hidden).toBe(true);
-    expect(node.querySelector(".orphan-actions button").textContent).toBe("Copy cell");
+    expect(node.querySelector(".output-only-actions button").textContent).toBe("Copy cell");
     expect(node.querySelectorAll(".output-fold")).toHaveLength(1);
   });
 });

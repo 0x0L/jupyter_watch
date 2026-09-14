@@ -38,21 +38,23 @@ export function foldPlaceholder(label, onExpand) {
   return button;
 }
 
-export function copyButton(getText, label = "Copy") {
+export function copyButton(getText, label = "Copy output") {
   const button = document.createElement("button");
   button.className = "copy-btn";
   button.textContent = label;
   button.title = label;
   button.setAttribute("aria-live", "polite");
+  let resetTimer;
   button.addEventListener("click", async (event) => {
+    window.clearTimeout(resetTimer);
     event.stopPropagation();
     try {
       await navigator.clipboard.writeText(getText());
-      button.textContent = "Copied!";
+      button.textContent = "Copied";
     } catch {
       button.textContent = "Copy failed";
     }
-    setTimeout(() => {
+    resetTimer = setTimeout(() => {
       button.textContent = label;
     }, 1500);
   });
@@ -77,6 +79,7 @@ class SVGRenderer extends Widget {
     // encodeURIComponent also handles Unicode SVG without btoa's Latin-1 limit.
     const img = document.createElement("img");
     img.src = `data:image/svg+xml,${encodeURIComponent(model.data["image/svg+xml"])}`;
+    img.alt = "SVG output";
     this.node.replaceChildren(img);
   }
 }
@@ -163,8 +166,10 @@ export class WatchOutputArea extends OutputArea {
     if (!panel) return panel;
     const controls = new Widget();
     controls.addClass("output-controls");
-    const copy = copyButton(() => outputText(model, panel.widgets[1].node, richText), "Copy");
-    copy.title = "Copy output";
+    const copy = copyButton(
+      () => outputText(model, panel.widgets[1].node, richText),
+      "Copy output",
+    );
     controls.node.append(copy);
     panel.addWidget(controls);
     return panel;

@@ -1,9 +1,11 @@
+import { readPreference, savePreference } from "./preferences.js";
+
 export const LANGUAGES = ["python", "javascript", "bash", "json", "plaintext"];
 const STORAGE_KEY = "jupyter-watch-view";
 
-export function readViewPreferences(storage = localStorage) {
+export function readViewPreferences(storage) {
   try {
-    const saved = JSON.parse(storage.getItem(STORAGE_KEY));
+    const saved = JSON.parse(readPreference(STORAGE_KEY, storage));
     return {
       wrap: saved?.wrap === true,
       language: LANGUAGES.includes(saved?.language) ? saved.language : "python",
@@ -25,11 +27,7 @@ export function setupViewSettings(onChange) {
   function change() {
     preferences.wrap = wrap.checked;
     preferences.language = language.value;
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(preferences));
-    } catch {
-      /* Preferences still work for this page. */
-    }
+    savePreference(STORAGE_KEY, JSON.stringify(preferences));
     onChange(preferences);
   }
   wrap.addEventListener("change", change);

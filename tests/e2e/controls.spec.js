@@ -74,7 +74,7 @@ test("group folding, current cell copying, output replacement, and Clear remain 
   send("update_display_data", display({ "text/plain": "must not resurrect" }, "value"));
   await expect(page.locator("#notebook > div")).toHaveCount(0);
   send("stream", stream("output without input\n"), "orphan");
-  const orphan = page.locator(".standalone-output");
+  const orphan = page.locator(".output-only");
   await expect(orphan.locator(".cell-input")).toBeHidden();
   await orphan.hover();
   await orphan.getByRole("button", { name: "Copy cell", exact: true }).click();
@@ -95,10 +95,10 @@ test("View settings preserve code, folding, reading position, and preferences", 
     send("stream", stream(`result ${i}\n`.repeat(5)), String(i));
   }
   await expect(page.locator(".cell")).toHaveCount(20);
-  await expect(page.locator("#autoscroll-toggle")).toBeChecked();
+  await expect(page.locator("#follow-output")).toBeChecked();
   await page.mouse.move(650, 400);
   await page.mouse.wheel(0, -850);
-  await expect(page.locator("#autoscroll-toggle")).not.toBeChecked();
+  await expect(page.locator("#follow-output")).not.toBeChecked();
   const before = await page.locator(".cell").evaluateAll((cells) => {
     const index = cells.findIndex((cell) => cell.getBoundingClientRect().bottom > 60);
     return { index, top: cells[index].getBoundingClientRect().top };
@@ -115,7 +115,7 @@ test("View settings preserve code, folding, reading position, and preferences", 
       return Math.abs(box.y - before.top);
     })
     .toBeLessThan(3);
-  await expect(page.locator("#autoscroll-toggle")).not.toBeChecked();
+  await expect(page.locator("#follow-output")).not.toBeChecked();
   await page.keyboard.press("Escape");
   await expect(page.locator("#view-settings")).not.toHaveAttribute("open");
   await expect(page.locator("#view-settings summary")).toBeFocused();
@@ -131,7 +131,7 @@ test("View settings preserve code, folding, reading position, and preferences", 
   await expect(page.locator(".source")).toHaveText(code);
   await expect(page.locator(".source code span")).toHaveCount(0);
   await page.locator(".gutter").click();
-  await expect(page.locator("#autoscroll-toggle")).toBeChecked();
+  await expect(page.locator("#follow-output")).toBeChecked();
   await page.locator("#view-settings summary").click();
   await page.getByLabel("Wrap input lines").uncheck();
   await expect(page.locator(".cell-input")).toHaveClass(/collapsed/);
@@ -177,4 +177,80 @@ test("grouped charts resize on expansion and View fits a narrow screen", async (
   expect(panel.x + panel.width).toBeLessThanOrEqual(390);
   await page.screenshot({ path: ".test-runtime/view-mobile.png", fullPage: true });
   expect(errors).toEqual([]);
+});
+
+test("blocked storage does not prevent viewing or changing settings", async ({ page }) => {
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.addInitScript(() => {
+    Object.defineProperty(window, "localStorage", {
+      get() {
+        throw new Error("Storage blocked");
+      },
+    });
+  });
+  const send = await viewer(page);
+  await expect(page.getByText("No activity yet", { exact: true })).toBeVisible();
+  await page.getByTitle("Toggle dark mode").click();
+  await expect(page.getByTitle("Toggle dark mode")).toHaveAttribute("aria-pressed", "true");
+  await page.locator("#view-settings summary").click();
+  await page.getByLabel("Wrap input lines").check();
+  await page.getByLabel("Input language").selectOption("javascript");
+  await page.keyboard.press("Escape");
+  send("execute_input", { code: "const answer = 42;", execution_count: 1 });
+  await expect(page.locator(".source .hljs-keyword")).toHaveText("const");
+  await expect(page.getByText("No activity yet", { exact: true })).toBeHidden();
+  await expect(page.locator("body")).toHaveClass(/wrap-input/);
+  expect(errors).toEqual([]);
+});
+
+test("prompts align and controls do not overlap content at supported widths", async ({ page }) => {
+  const send = await viewer(page);
+  send("execute_input", { code: "print('alignment')\n42", execution_count: 1 });
+  send("execute_result", { data: { "text/plain": "42" }, metadata: {}, execution_count: 1 });
+  await expect(page.locator(".jp-OutputArea-output")).toHaveText("42");
+  for (const width of [320, 390, 760, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    const header = await page.locator("#header").boundingBox();
+    const input = await page.locator(".cell-input").boundingBox();
+    const source = await page.locator(".source").boundingBox();
+    const output = await page.locator(".jp-OutputArea-output").boundingBox();
+    const inputActions = await page.locator(".cell-input .cell-actions").boundingBox();
+    const outputCopy = await page
+      .getByRole("button", { name: "Copy output", exact: true })
+      .boundingBox();
+    expect(input.y).toBeGreaterThanOrEqual(header.y + header.height);
+    expect(Math.abs(source.x - output.x)).toBeLessThan(1);
+    expect(
+      source.x + source.width <= inputActions.x + 1 ||
+        source.y + source.height <= inputActions.y + 1,
+    ).toBe(true);
+    expect(
+      output.x + output.width <= outputCopy.x + 1 || output.y + output.height <= outputCopy.y + 1,
+    ).toBe(true);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      width,
+    );
+    await page.locator("#view-settings summary").click();
+    const panel = await page.locator(".view-panel").boundingBox();
+    expect(panel.x).toBeGreaterThanOrEqual(0);
+    expect(panel.x + panel.width).toBeLessThanOrEqual(width);
+    await page.keyboard.press("Escape");
+  }
+});
+
+test("connection filename copying reports success and failure", async ({ page, context }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await viewer(page);
+  const copy = page.getByRole("button", { name: "Copy connection filename: controls.json" });
+  await copy.click();
+  await expect(page.locator("#notice")).toHaveText("Connection filename copied.");
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe("controls.json");
+  await context.clearPermissions();
+  await context.grantPermissions([]);
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, "clipboard", { value: undefined, configurable: true });
+  });
+  await copy.click();
+  await expect(page.locator("#notice")).toHaveText("Could not copy the connection filename.");
 });

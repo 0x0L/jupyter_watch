@@ -12,7 +12,7 @@ import { cellText } from "./transcript.js";
 /** A passive cell shell; Jupyter owns all output models and renderers. */
 export function createCellView(model, { container, getLanguage, preservePosition }) {
   const cell = document.createElement("div");
-  cell.className = "standalone-output jp-ThemedContainer";
+  cell.className = "output-only jp-ThemedContainer";
   const input = document.createElement("div");
   input.className = "cell-input";
   input.hidden = true;
@@ -70,10 +70,10 @@ export function createCellView(model, { container, getLanguage, preservePosition
     () => cellText(code, model, (i) => area.rendererNode(i), richText),
     "Copy cell",
   );
-  const orphanActions = document.createElement("div");
-  orphanActions.className = "cell-actions orphan-actions";
-  orphanActions.append(copyCell);
-  cell.prepend(orphanActions);
+  const outputActions = document.createElement("div");
+  outputActions.className = "cell-actions output-only-actions";
+  outputActions.append(copyCell);
+  cell.prepend(outputActions);
   let folded = false;
   let updated = false;
 
@@ -130,11 +130,11 @@ export function createCellView(model, { container, getLanguage, preservePosition
   const view = {
     setInput(text, count) {
       code = text;
-      cell.classList.remove("standalone-output");
+      cell.classList.remove("output-only");
       cell.classList.add("cell");
       input.hidden = false;
       inputActions.append(copyCell);
-      orphanActions.remove();
+      outputActions.remove();
       gutter.textContent = `In [${count ?? ""}]:`;
       continuations.textContent = code
         .split("\n")

@@ -35,11 +35,9 @@ Alternatively, start a kernel separately with `jupyter kernel` and pass its conn
 
 Use `--port 3000` to change the listening port. The server binds to `127.0.0.1`, validates Host headers, and requires same-origin WebSocket connections. An explicit `--dev-origin` allows Vite during development. This is a local viewer; remote hosting and Jupyter Server integration are outside its scope.
 
-The former Node launcher, UUID-prefix lookup, runtime-directory searches, and `PORT`, `WATCH_DEV_ORIGIN`, and `JUPYTER_WATCH_PYTHON` environment variables have been retired. Use the connection path, `--port`, and `--dev-origin` flags instead.
-
 ## Build and develop
 
-Development uses uv with Python 3.12 and a current Node LTS release for frontend tooling. Frontend compilation is explicit:
+Development uses uv with Python 3.12 and Node 22.13+ (22.x) or 24+ for frontend tooling. Frontend compilation is explicit:
 
 ```sh
 uv sync --locked
@@ -79,9 +77,13 @@ uv run python tests/package_smoke.py
 
 Python tests exercise validation, live-only delivery, slow readers, security, full signed messages and buffers, heartbeat loss, and shutdown without stopping the kernel. Chromium tests exercise rendering, controls, clearing, cross-cell updates, empty displays after reload, offline reconnect, and Vite's proxy. Test fixtures use uv and own only their test kernels. The package smoke test installs the wheel into an isolated environment, runs outside the checkout without Node on PATH, verifies HTTP assets and WebSocket output, and checks the source distribution assets.
 
-The interface uses a Qt Console-inspired continuous transcript with `In [n]:` and `Out[n]:` prompts. JupyterLab supplies the light/dark theme variables, output models, execution-result prompts, and MIME renderers. A small local stylesheet adapts their layout; the viewer remains read-only, with no executable input prompt. Click an `In [n]:` prompt to fold its input. A separate arrow folds all outputs in that cell; its clickable ellipsis shows the output count and marks updates received while folded. Copy input and individual output controls remain available, and Copy cell copies the source plus current outputs as a plain-text transcript, including folded content. Images and charts without a text representation use descriptive placeholders.
+## Viewer controls
 
-The **View** menu controls input wrapping and highlighting (Python, JavaScript, Bash, JSON, or plain text). These settings apply to existing and future inputs and are saved in your browser. Wrapped inputs omit continuation prompts so soft-wrapped lines stay aligned. Folding and View changes preserve your reading position and Follow output preference. **Clear** empties the local transcript while the kernel connection continues receiving new activity.
+The interface uses a Qt Console-inspired continuous transcript with `In [n]:` and `Out[n]:` prompts. JupyterLab supplies the light/dark theme variables, output models, execution-result prompts, and MIME renderers. A small local stylesheet adapts their layout; the viewer remains read-only, with no executable input prompt. Click an `In [n]:` prompt to fold its input. A separate arrow folds all outputs in that cell; its clickable ellipsis shows the output count and marks updates received while folded. **Copy input** and **Copy output** remain available, and **Copy cell** copies the source plus current outputs as a plain-text transcript, including folded content. Images and charts without a text representation use descriptive placeholders.
+
+The **View** menu controls input wrapping and highlighting (Python, JavaScript, Bash, JSON, or plain text). These settings apply to existing and future inputs and are saved in your browser when storage is available. Wrapped inputs omit continuation prompts so soft-wrapped lines stay aligned. Folding and View changes preserve your reading position and Follow output preference. **Theme** switches between light and dark, starting with your saved or system preference. Click the connection filename to copy it; the status reports **Connected**, **Busy**, **Offline**, or **Reconnecting**.
+
+**Clear** empties the local transcript while the kernel connection continues receiving new activity.
 
 ## Architecture and behavior
 
@@ -90,7 +92,9 @@ The **View** menu controls input wrapping and highlighting (Python, JavaScript, 
 - `src/jupyter_watch/server.py` and `subscriber.py`: Starlette static/WebSocket handling, and ordered per-subscriber send queues. Stopping the watcher leaves the kernel running.
 - `src/output-router.js`: routes executions into JupyterLab `OutputAreaModel`, including orphan outputs and display IDs shared across cells. Jupyter handles stream merging, carriage returns, backspaces, and deferred clearing.
 - `src/renderer.js`: JupyterLab renderers with adapters for math/Markdown, JSON, SVG images, Plotly, and folding/copy controls. Plotly loads from a bundled chunk, with no CDN dependency.
-- `src/main.js`: cell views, connection state, themes, and scrolling.
+- `src/cell-view.js` and `src/transcript.js`: cell controls and plain-text copying.
+- `src/view-settings.js` and `src/preferences.js`: View settings and optional browser persistence.
+- `src/main.js` and `src/scroll.js`: connection state, themes, and reading-position preservation.
 
 Output models are **untrusted**: Jupyter sanitizes HTML and Markdown, arbitrary JavaScript MIME output is disabled, and SVG uses an image context. Interactive Plotly charts use the bundled renderer. The sanitizer dependency is overridden to a compatible patched 2.x version.
 

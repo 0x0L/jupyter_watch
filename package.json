@@ -1,7 +1,7 @@
 {
   "name": "jupyter-watch",
   "version": "0.1.0",
-  "description": "Web-based Jupyter kernel output watcher with real-time display",
+  "description": "A passive, local web viewer for Jupyter kernel output",
   "author": "0x0L",
   "license": "MIT",
   "private": true,
@@ -34,11 +34,11 @@
     "prettier": "^3.8.1",
     "sanitize-html": "^2.17.7",
     "vite": "^6.2.0",
-    "vitest": "^3.2.7",
+    "vitest": "^4.1.11",
     "ws": "^8.18.0"
   },
   "engines": {
-    "node": ">=18"
+    "node": "^22.13.0 || >=24"
   },
   "overrides": {
     "sanitize-html": "^2.17.7"
