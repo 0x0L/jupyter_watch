@@ -114,16 +114,13 @@ describe("Jupyter MIME rendering", () => {
     svg.dispose();
     json.dispose();
   });
-  it("updates a mounted output widget and retains folding controls", async () => {
+  it("updates a mounted output widget and retains copy controls", async () => {
     const r = router();
     r.handle(msg("display_data", display("old")));
     const area = new WatchOutputArea({ model: r.cells.get("a").model, rendermime });
     Widget.attach(area, document.body);
     await vi.waitFor(() => expect(area.node.textContent).toContain("old"));
-    area.node.querySelector(".output-fold").click();
-    expect(area.node.querySelector(".jp-OutputArea-child").classList.contains("collapsed")).toBe(
-      true,
-    );
+    expect(area.node.querySelector(".copy-btn")).not.toBeNull();
     r.handle(msg("update_display_data", display("new")));
     await vi.waitFor(() => expect(area.node.textContent).toContain("new"));
     expect(area.node.querySelectorAll(".jp-OutputArea-child")).toHaveLength(1);

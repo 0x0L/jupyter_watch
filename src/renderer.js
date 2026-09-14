@@ -1,6 +1,7 @@
 import { RenderMimeRegistry, standardRendererFactories } from "@jupyterlab/rendermime";
 import { OutputArea } from "@jupyterlab/outputarea";
 import { Widget } from "@lumino/widgets";
+import { outputText } from "./transcript.js";
 import hljs from "highlight.js/lib/core";
 import python from "highlight.js/lib/languages/python";
 import javascript from "highlight.js/lib/languages/javascript";
@@ -18,7 +19,8 @@ export function renderCode(code, language = "python") {
   const codeEl = document.createElement("code");
   codeEl.className = "hljs";
   try {
-    codeEl.innerHTML = hljs.highlight(code, { language }).value;
+    if (language === "plaintext") codeEl.textContent = code;
+    else codeEl.innerHTML = hljs.highlight(code, { language }).value;
   } catch {
     codeEl.textContent = code;
   }
@@ -36,10 +38,12 @@ export function foldPlaceholder(label, onExpand) {
   return button;
 }
 
-export function copyButton(getText) {
+export function copyButton(getText, label = "Copy") {
   const button = document.createElement("button");
   button.className = "copy-btn";
-  button.textContent = "Copy";
+  button.textContent = label;
+  button.title = label;
+  button.setAttribute("aria-live", "polite");
   button.addEventListener("click", async (event) => {
     event.stopPropagation();
     try {
@@ -49,7 +53,7 @@ export function copyButton(getText) {
       button.textContent = "Copy failed";
     }
     setTimeout(() => {
-      button.textContent = "Copy";
+      button.textContent = label;
     }, 1500);
   });
   return button;
@@ -100,6 +104,13 @@ class PlotlyRenderer extends Widget {
       });
     return this.queue;
   }
+  resize() {
+    return this.queue.then(() => {
+      if (!this.isDisposed && this.plotly && this.node.getBoundingClientRect().width > 0) {
+        return this.plotly.Plots.resize(this.node);
+      }
+    });
+  }
   dispose() {
     if (this.isDisposed) return;
     this.plotly?.purge(this.node);
@@ -137,33 +148,35 @@ for (const [mime, rank, Renderer] of [
   });
 }
 
-/** Only watcher controls are custom; Jupyter owns output rendering and updates. */
+/** Only copy controls are custom; Jupyter owns rendering and updates. */
 export class WatchOutputArea extends OutputArea {
+  rendererNode(index) {
+    return this.widgets[index]?.widgets?.[1]?.node;
+  }
+  resizeOutputs() {
+    return Promise.all(this.widgets.map((panel) => panel.widgets?.[1]?.resize?.())).catch(
+      console.error,
+    );
+  }
   createOutputItem(model) {
     const panel = super.createOutputItem(model);
     if (!panel) return panel;
-    const toggle = document.createElement("button");
-    toggle.className = "output-fold";
-    toggle.textContent = "▾";
-    toggle.title = "Fold output";
-    toggle.setAttribute("aria-label", "Fold output");
-    toggle.setAttribute("aria-expanded", "true");
-    toggle.onclick = () => {
-      const collapsed = panel.node.classList.toggle("collapsed");
-      toggle.textContent = collapsed ? "▸" : "▾";
-      toggle.setAttribute("aria-expanded", String(!collapsed));
-      toggle.title = collapsed ? "Expand output" : "Fold output";
-      toggle.setAttribute("aria-label", toggle.title);
-    };
-    panel.addWidget(new Widget({ node: foldPlaceholder("Expand output", () => toggle.click()) }));
-    // Preserve Jupyter's execution-count prompt; controls sit beside the output.
     const controls = new Widget();
     controls.addClass("output-controls");
-    controls.node.append(
-      toggle,
-      copyButton(() => panel.widgets[1].node.textContent),
-    );
+    const copy = copyButton(() => outputText(model, panel.widgets[1].node, richText), "Copy");
+    copy.title = "Copy output";
+    controls.node.append(copy);
     panel.addWidget(controls);
     return panel;
   }
+}
+
+// Sanitize snapshots of rich text synchronously, so copying never depends on
+// asynchronous display rendering and retains browser clipboard user activation.
+export function richText(data) {
+  const html =
+    data["text/html"] ?? (data["text/markdown"] ? marked.parse(data["text/markdown"]) : "");
+  const host = document.createElement("template");
+  host.innerHTML = rendermime.sanitizer.sanitize(html);
+  return host.content;
 }

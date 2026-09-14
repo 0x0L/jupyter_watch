@@ -25,6 +25,22 @@
           <input type="checkbox" id="autoscroll-toggle" checked />
           Follow output
         </label>
+        <details id="view-settings">
+          <summary>View</summary>
+          <div class="view-panel">
+            <label class="wrap-option"
+              ><input id="wrap-input" type="checkbox" /> Wrap input lines</label
+            >
+            <label for="input-language">Input language</label>
+            <select id="input-language">
+              <option value="python">Python</option>
+              <option value="javascript">JavaScript</option>
+              <option value="bash">Bash</option>
+              <option value="json">JSON</option>
+              <option value="plaintext">Plain text</option>
+            </select>
+          </div>
+        </details>
         <button id="theme-fab" title="Toggle dark mode" aria-label="Toggle dark mode">
           <span id="theme-icon-sun" aria-hidden="true">☀︎</span>
           <span id="theme-icon-moon" aria-hidden="true" style="display: none">☾</span>

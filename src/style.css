@@ -154,6 +154,7 @@ input:focus-visible {
 }
 .cell,
 .standalone-output {
+  position: relative;
   margin: 0 0 20px;
 }
 .cell > .cell-output {
@@ -245,7 +246,7 @@ input:focus-visible {
 .jp-OutputArea .jp-OutputArea-prompt {
   color: var(--console-out);
 }
-.jp-OutputArea-child.collapsed .jp-OutputArea-output {
+.cell-output.collapsed .output-host {
   display: none;
 }
 .fold-placeholder {
@@ -310,6 +311,7 @@ body.dark .jp-OutputArea img[src^="data:image/svg+xml"] {
 }
 .output-fold {
   position: absolute;
+  z-index: 1;
   top: 0;
   left: 0;
   width: 20px;
@@ -427,5 +429,163 @@ body.dark .jp-OutputArea img[src^="data:image/svg+xml"] {
     transition:
       background-color 120ms ease,
       border-color 120ms ease;
+  }
+}
+
+/* Section controls live outside the upstream output widget. */
+.cell-output {
+  position: relative;
+}
+.cell-output[hidden] {
+  display: none;
+}
+.outputs-placeholder {
+  margin-left: calc(var(--jp-cell-prompt-width) * 1);
+  font: 12px / 1.5 var(--jp-ui-font-family);
+  height: 24px;
+  padding: 2px 10px;
+}
+.cell-actions {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  gap: 4px;
+  z-index: 1;
+}
+.orphan-actions {
+  top: 0;
+}
+.standalone-output {
+  padding-top: 20px;
+}
+.cell-input:hover .cell-actions .copy-btn,
+.cell-input:focus-within .cell-actions .copy-btn,
+.standalone-output:hover > .cell-actions .copy-btn,
+.standalone-output:focus-within > .cell-actions .copy-btn {
+  opacity: 1;
+}
+body.wrap-input .source pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+body.wrap-input .continuation-prompts {
+  display: none;
+}
+#notebook {
+  overflow-anchor: none;
+}
+#view-settings {
+  position: relative;
+}
+#view-settings summary {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 28px;
+  padding: 3px 9px;
+  cursor: pointer;
+  list-style: none;
+  border: 1px solid var(--jp-border-color2);
+  border-radius: 5px;
+  background: var(--jp-layout-color0);
+}
+#view-settings summary::-webkit-details-marker {
+  display: none;
+}
+#view-settings summary::after {
+  content: "⌄";
+}
+#view-settings[open] summary,
+#view-settings summary:hover {
+  background: var(--jp-layout-color2);
+}
+#view-settings summary:focus-visible {
+  outline: 2px solid var(--jp-brand-color1);
+  outline-offset: 2px;
+}
+.view-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 220px;
+  padding: 14px;
+  display: grid;
+  gap: 8px;
+  background: var(--jp-layout-color0);
+  border: 1px solid var(--jp-border-color2);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px #0002;
+}
+.wrap-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.wrap-option input {
+  margin: 0;
+}
+.view-panel select {
+  width: 100%;
+  padding: 5px;
+  font: inherit;
+  color: var(--jp-ui-font-color1);
+  background: var(--jp-layout-color1);
+  border: 1px solid var(--jp-border-color2);
+  border-radius: 4px;
+}
+@media (hover: none) {
+  .copy-btn {
+    opacity: 1;
+  }
+  .cell-actions {
+    position: static;
+    justify-content: flex-end;
+  }
+  .cell-input {
+    flex-wrap: wrap;
+  }
+  .cell-input .cell-actions {
+    flex-basis: 100%;
+  }
+  .orphan-actions {
+    margin-bottom: 4px;
+  }
+  .standalone-output {
+    padding-top: 0;
+  }
+}
+@media (max-width: 480px) {
+  .toolbar-controls {
+    flex-basis: 100%;
+    margin-left: 0;
+    justify-content: space-between;
+  }
+  .connection-info {
+    order: 0;
+    flex-basis: auto;
+    margin-left: auto;
+  }
+  #status-label {
+    display: none;
+  }
+  #kernel-info {
+    max-width: 40vw;
+  }
+  .view-panel {
+    right: -50px;
+    width: min(220px, calc(100vw - 24px));
+  }
+  .cell-input > .cell-actions {
+    position: static;
+    flex-basis: 100%;
+    justify-content: flex-end;
+  }
+  .cell-input {
+    flex-wrap: wrap;
+  }
+  .cell-input > .cell-actions .copy-btn {
+    opacity: 1;
   }
 }

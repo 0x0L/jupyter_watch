@@ -9,6 +9,9 @@ jupyter-watch is a passive viewer for existing Jupyter kernels. Prefer upstream 
 - `src/jupyter_watch/server.py`, `subscriber.py`: loopback Starlette/Uvicorn HTTP/WebSocket service, Host/Origin checks, bounded live subscriber queues. No output history or replay.
 - `src/output-router.js`: parent request / display ID routing into JupyterLab models with bounded retention.
 - `src/renderer.js`: JupyterLab rendering plus Plotly, JSON, SVG images, math/Markdown, and folding/copy controls. Models remain untrusted.
+- `src/cell-view.js`: independent input/grouped-output folding and cell actions around Jupyter output widgets.
+- `src/transcript.js`: current-model plain-text copying, including folded content.
+- `src/view-settings.js`, `src/scroll.js`: local View preferences and reading-position preservation.
 - `src/main.js`, `src/style.css`: presentation and interaction.
 
 ## Validation

@@ -23,7 +23,8 @@
     "highlight.js": "^11.11.1",
     "katex": "^0.16.28",
     "marked": "^12.0.0",
-    "plotly.js-dist-min": "^4.0.0"
+    "plotly.js-dist-min": "^4.0.0",
+    "strip-ansi": "^7.2.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

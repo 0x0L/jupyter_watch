@@ -59,11 +59,12 @@ display({'application/vnd.plotly.v1+json': {'data': [{'x': [1,2,3], 'y': [2,1,4]
   await page.locator(".jp-OutputArea summary").click();
   await expect(page.locator(".jp-OutputArea details pre")).toBeVisible();
   const output = page.locator(".jp-OutputArea-child").first();
-  await output.locator(".output-fold").click();
-  await expect(output).toHaveClass(/collapsed/);
-  await expect(output.locator(".jp-OutputArea-output")).toBeHidden();
+  const section = page.locator(".cell-output").first();
+  await section.locator(".output-fold").click();
+  await expect(section).toHaveClass(/collapsed/);
+  await expect(section.locator(".output-host")).toBeHidden();
   await expect(input.locator(".source")).toBeVisible();
-  await expect(output.locator(".fold-placeholder")).toBeVisible();
+  await expect(section.locator(".fold-placeholder")).toBeVisible();
   await input.locator(".gutter").click();
   await page.screenshot({
     path: ".test-runtime/folded.png",
@@ -71,8 +72,8 @@ display({'application/vnd.plotly.v1+json': {'data': [{'x': [1,2,3], 'y': [2,1,4]
     animations: "disabled",
   });
   await input.locator(".fold-placeholder").click();
-  await expect(output).toHaveClass(/collapsed/);
-  await output.locator(".fold-placeholder").click();
+  await expect(section).toHaveClass(/collapsed/);
+  await section.locator(".fold-placeholder").click();
   await expect(output.locator(".jp-OutputArea-output")).toBeVisible();
   await output.hover();
   await output.getByRole("button", { name: "Copy", exact: true }).click();

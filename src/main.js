@@ -1,12 +1,7 @@
-import {
-  renderCode,
-  copyButton,
-  foldPlaceholder,
-  rendermime,
-  WatchOutputArea,
-} from "./renderer.js";
+import { createCellView } from "./cell-view.js";
 import { OutputRouter } from "./output-router.js";
-import { Widget } from "@lumino/widgets";
+import { setupViewSettings } from "./view-settings.js";
+import { setupScroll } from "./scroll.js";
 import "@lumino/widgets/style/widget.css";
 import "@jupyterlab/rendermime/style/base.css";
 import "@jupyterlab/outputarea/style/base.css";
@@ -52,31 +47,17 @@ themeFab.addEventListener("click", () => {
   applyTheme(!document.body.classList.contains("dark"));
 });
 
-// Auto-scroll: only if user hasn't scrolled up
-let autoScroll = true;
-const autoScrollToggle = document.getElementById("autoscroll-toggle");
-const autoScrollFab = document.getElementById("autoscroll-fab");
-
-function updateFab() {
-  autoScrollFab.classList.toggle("off", !autoScroll);
-}
-
-window.addEventListener("scroll", () => {
-  const atBottom = window.innerHeight + window.scrollY >= document.body.scrollHeight - 50;
-  autoScroll = atBottom;
-  autoScrollToggle.checked = autoScroll;
-  updateFab();
-});
-
-autoScrollToggle.addEventListener("change", () => {
-  autoScroll = autoScrollToggle.checked;
-  updateFab();
-  if (autoScroll) scrollToBottom();
-});
-
-function scrollToBottom() {
-  window.scrollTo(0, document.body.scrollHeight);
-}
+const scroll = setupScroll(
+  notebook,
+  document.getElementById("autoscroll-toggle"),
+  document.getElementById("autoscroll-fab"),
+);
+const preferences = setupViewSettings((next) =>
+  scroll.preservePosition(() => {
+    document.body.classList.toggle("wrap-input", next.wrap);
+    for (const cell of router.cells.values()) cell.view.refreshInput();
+  }),
+);
 
 // --- Cell views and upstream output models ---
 
@@ -88,71 +69,21 @@ function showNotice(text) {
   notice.textContent = text;
 }
 
-function createCell(model) {
-  const cell = document.createElement("div");
-  cell.className = "standalone-output jp-ThemedContainer";
-  const input = document.createElement("div");
-  input.className = "cell-input";
-  input.hidden = true;
-  const gutter = document.createElement("button");
-  gutter.className = "gutter";
-  gutter.title = "Fold input";
-  gutter.setAttribute("aria-expanded", "true");
-  gutter.onclick = () => {
-    const collapsed = input.classList.toggle("collapsed");
-    gutter.setAttribute("aria-expanded", String(!collapsed));
-    gutter.title = collapsed ? "Expand input" : "Fold input";
-  };
-  const prompts = document.createElement("div");
-  prompts.className = "input-prompts";
-  prompts.appendChild(gutter);
-  const continuations = document.createElement("div");
-  continuations.className = "continuation-prompts";
-  continuations.setAttribute("aria-hidden", "true");
-  prompts.appendChild(continuations);
-  const source = document.createElement("div");
-  source.className = "source";
-  let code = "";
-  input.append(
-    prompts,
-    source,
-    foldPlaceholder("Expand input", () => gutter.click()),
-    copyButton(() => code),
-  );
-  const output = document.createElement("div");
-  output.className = "cell-output";
-  cell.append(input, output);
-  notebook.appendChild(cell);
-  const area = new WatchOutputArea({ model, rendermime });
-  Widget.attach(area, output);
-  return {
-    setInput(text, count) {
-      code = text;
-      cell.className = "cell jp-ThemedContainer";
-      input.hidden = false;
-      gutter.title = input.classList.contains("collapsed") ? "Expand input" : "Fold input";
-      gutter.textContent = `In [${count ?? ""}]:`;
-      continuations.textContent = code
-        .split("\n")
-        .slice(1)
-        .map(() => "...:")
-        .join("\n");
-      source.replaceChildren(renderCode(code));
-    },
-    dispose() {
-      area.dispose();
-      cell.remove();
-    },
-  };
-}
 const router = new OutputRouter({
-  createCell,
+  createCell: (model) =>
+    createCellView(model, {
+      container: notebook,
+      getLanguage: () => preferences.language,
+      preservePosition: scroll.preservePosition,
+    }),
   onTruncate: () =>
     showNotice("Earlier activity was omitted to keep the viewer within its history limit."),
 });
 document.getElementById("clear-output").addEventListener("click", () => {
-  router.reset();
-  showNotice("");
+  scroll.preservePosition(() => {
+    router.reset();
+    showNotice("");
+  });
 });
 
 let kernelAlive = false;
@@ -191,14 +122,20 @@ function handleMessage(msg) {
     updateStatus();
   } else {
     router.handle(msg);
+    if (
+      [
+        "execute_input",
+        "execute_result",
+        "display_data",
+        "update_display_data",
+        "stream",
+        "error",
+        "clear_output",
+      ].includes(type)
+    )
+      scroll.activity();
   }
-  if (autoScroll) scrollToBottom();
 }
-// Account for asynchronous Markdown, math, image, and Plotly layout changes.
-const resizeObserver = new ResizeObserver(() => {
-  if (autoScroll) scrollToBottom();
-});
-resizeObserver.observe(notebook);
 
 // --- WebSocket connection with auto-reconnect ---
 
